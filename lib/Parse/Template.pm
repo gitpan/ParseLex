@@ -33,31 +33,47 @@ Parse::Template - Template Processor (0.30)
               'hash' => { 'key_value' => q!It\'s an hash value! });
   print $tmplt->eval('TOP'), "\n";
 
-
 =head1 DESCRIPTION
 
-Parse::Template permits evaluating Perl expressions placed within a
-template.  These expressions must be surrounded by C<%%>, and they are
-evaluated within an environment specific to each instance of the
-C<Parse::Template> class.
+The C<Parse::Template> class permits evaluating Perl expressions
+placed within a template.  The template is a hash passed as an
+argument to the C<new()> method :
+C<Parse::Template->E<gt>C<new('someKey', '... text with expressions to
+evaluate ...')>. This specification permits splitting up a template into
+different parts.  Within a part, a sub-part can be including by
+means of the expression :
 
-C<Parse::Template> creates a class specific to each instance.  This
-class inherits from the class C<Parse::Template> and contains the
-environment that is specific to the template.
+  $self->eval('SUB_PART_NAME')
+
+C<$self> designates the instance of the C<Parse::Template> class.
+If you specify only the name of the part, a subroutine with the
+name of the part will be automatically defined.  In the example given
+in the synopsis, the insertion of the C<TOP> part can be rewritten:
+
+  'TOP' => q!before %%DATA()%%after!
+
+The subroutines can take arguments.
+
+The expressions to be evaluated must be placed within C<%%>, 
+and they are evaluated within an environment specific to
+each instance of the C<Parse::Template> class.  Each instance
+is defined within a specific class that is a subclass of
+C<Parse::Template>. This class contains the environment specific
+to the template and inherits from the C<Parse::Template> class.
 
 The C<env()> method permits constructing the required evaluation
-environment.  Each entry must be specified using a key consisting of
-the name of the symbol to be created, associated with a reference
-whose type is that of entry to be created (for example, a reference to
-an array to create an array).  A scalar variable is defined by
-declaring the name of the variable, associated with its value.  A
-scalar variable containing a reference is defined by writing C<'var'
-=&gt; \$variable>, where C<$variable> is a lexical variable that contains
-the reference.
+environment.  Each entry to be defined within the environment must be
+specified using a key consisting of the name of the symbol to be
+created, associated with a reference whose type is that of the created
+entry (for example, a reference to an array to create an array).  A
+scalar variable is defined by declaring a name for the variable,
+associated with its value.  A scalar variable containing a reference
+is defined by writing C<'var' =>E<gt>C<\$variable>, where C<$variable>
+is a lexical variable that contains the reference.
 
 This package was initially created to serve as a code generator
 for the C<Parse::Lex> class.  You will find examples of its use
-in the classes C<Parse::Lex> et C<Parse::CLex>.
+in the classes C<Parse::Lex>, C<Parse::CLex> and C<Parse::Token>.
 
 =head1 METHODS
 
@@ -65,19 +81,25 @@ in the classes C<Parse::Lex> et C<Parse::CLex>.
 
 =item new HASH
 
-Constructor for the class.
+Constructor for the class. C<HASH> is a hash which defines the
+template text.
+
+Example:
+
+	use Parse::Template;
+	$t = new Parse::Template('key' => 'associated text');
 
 =item env HASH
 
 =item env SYMBOL
 
 Permits defining the environment that is specific to a template.
-C<env(SYMBOL)> returns the reference associated with the symbol, or
-C<undef> if the symbol is not defined.  The reference that is returned
-is of the type indicated by the character (C<&, $, %, @, *>) that
-prefixes the symbol.
+C<env(SYMBOL)> returns the reference associated with the symbol,
+or C<undef> if the symbol is not defined.  The reference that is
+returned is of the type indicated by the character (C<&, $, %, @, *>)
+that prefixes the symbol.
 
-Example:
+Examples:
 
   $tmplt->env('LIST' => [1, 2, 3])}   Defines a list
 
@@ -86,37 +108,36 @@ Example:
   @{$tmplt->env('@LIST')}             Ditto
 
 
-=item getPart PART_LABEL
+=item eval PART_NAME
+
+Evaluates the template part designated by C<PART_NAME>. Returns the
+string resulting from this evaluation.
+
+=item getPart PART_NAME
 
 Returns the designated part of the template.
 
 =item ppregexp REGEXP
 
-Preprocesses a regular expression so that it can be inserted into a
-template where the regular expression delimiter is either the
+Preprocesses a regular expression so that it can be inserted into
+a template where the regular expression delimiter is either the
 character "/" or the character "!".
 
-=item setPart PART_LABEL => TEXT
+=item setPart PART_NAME => TEXT
 
 A template is defined by a hash (associative array).  C<setPart()>
 permits defining a new entry within this hash.
 
-=item undef
-
-Permits destroying a template instance (see L<BUGS>).
-
 =back
+
+=head1 Examples
+
+See the C<examples> directory included in this distribution.
 
 =head1 NOTES CONCERNING THE CURRENT VERSION
 
-This is an experimental module.  Send me your comments.
-
-=head1 BUGS
-
-An instance is not destroyed when the variable within which it is
-placed is itself destroyed. Therefore, don't use this class to create
-a large number of instances, or if possible, use the C<undef()>
-method.
+This is an experimental module.  I would be very interested
+to receive your comments and suggestions.
 
 =head1 AUTHOR
 

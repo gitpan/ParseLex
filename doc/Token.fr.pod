@@ -253,7 +253,7 @@ C<Parse::Token::Simple> : pour définir les tokens 'ordinaires'.
 C<Parse::Token::Multiline> : pour définir des tokens pouvant
 nécessiter la lecture de données complémentaires.
 
-C<Parse::Token::Embedded> : pour reconnaître des structures
+C<Parse::Token::Nested> : pour reconnaître des structures
 imbriquées, tels que des expressions parenthésées.
 
 C<Parse::Token::Delimited> : pour reconnaître, par exemple, des
