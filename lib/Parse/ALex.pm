@@ -16,7 +16,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.13';
+$Parse::ALex::VERSION = '2.14';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace); 
 
@@ -757,7 +757,7 @@ sub genStateMachine {
   foreach $stateName (keys (%{$self->exclusive}), keys(%{$self->inclusive})) {
     $stateDeclaration .=
       q!my $! . "$stateName" . q! = 0; ! . 
-	q!$state{'! . "$stateName" . q!'} = \\$! . "$stateName" . q!;!  . "\n";
+	q!$LEX_STATE{'! . "$stateName" . q!'} = \\$! . "$stateName" . q!;!  . "\n";
   }
   $self->setStateMachine($stateDeclaration);
 }

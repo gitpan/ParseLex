@@ -1,13 +1,13 @@
-package W;
+# todo:
+# - use levels of verbosity
+package W;			# Test::Wrapper
 my $verbose = $ENV{TEST_VERBOSE};
 my $log = $ENV{TEST_LOG} ? 'testlog' : 0;
 
 if ($log) {
-  open(LOG, ">>$log") 
-    or die qq^unable to open "$log"^;
+  open(LOG, ">>$log") or die qq^unable to open "$log"^;
   print STDERR "see informations in the '$log' file\n";
 } 
-
 sub new {
   my $self = shift;
   $class = (ref $self or $self);
@@ -15,8 +15,7 @@ sub new {
   print "$range\n";
   bless { 'range' => $range }, $class;
 }
-
-sub result {			# ad hoc method
+sub result {		
   my $self = shift; 
   my $cmd = shift;
   my @result;
@@ -29,11 +28,14 @@ sub result {			# ad hoc method
     # the following line doesn't work on Win95 (ActiveState's Perl, build 516):
     # open( CMD, "$^X $cmd 2>err |" ) or warn "$0: Can't run. $!\n";
     # corrected by Stefan Becker:
+    local *SAVE_STDERR;
+    open(SAVE_STDERR, ">&STDERR");
     open STDERR, "> err";
     open( CMD, "$^X $cmd |" ) or warn "$0: Can't run. $!\n";
     @result = <CMD>;
     close CMD;
     close STDERR;
+    open(STDERR, ">&SAVE_STDERR");
 
     open( CMD, "< err" ) or warn "$0: Can't open: $!\n";
     @err = <CMD>;
@@ -84,6 +86,26 @@ sub report {			# borrowed to the DProf.pm package
 
   $x = &$sub;
   $x ? "ok $num\n" : "not ok $num\n";
+}
+sub all_in_one {		# not used, not tested
+  my $self = shift;
+  my $prog_to_test = shift;
+  my $reference = shift;	# filehandle
+  $self->result("$prog_to_test");
+  $self->expected($reference);
+  $self->report(1, sub { 
+		      my $expectation = $test->expected;
+		      my $result =  $test->result;
+		      $expectation =~ s/\s+$//;
+		      $result =~ s/\s+$//;
+		      unless ($expectation eq $result) {
+			print "$result\n" if $VERBOSE;
+			0;
+		      } else {
+			1;
+		      }
+		    });
+
 }
 sub debug {}
 1;

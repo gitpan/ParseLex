@@ -1,3 +1,9 @@
+MODIFICATIONS SINCE VERSION 2.13 - 18/09/99
+
+o Added a test using the state machine
+o Corrected bug in the state machine
+  (bug reported by Cheng-I Huang <hcy89@mozart.ee.ncku.edu.tw>).
+
 MODIFICATIONS SINCE VERSION 2.12 - 13/09/99
 
 o All tests now succeed with Perl 5.00404

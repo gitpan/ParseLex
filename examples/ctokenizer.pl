@@ -3,7 +3,6 @@
 require 5.000;
 BEGIN {  unshift @INC, "../lib"; }
 use Parse::CLex;
-print STDERR "Version $Parse::ALex::VERSION\n";
 
 @token = (
 	  qw(
