@@ -22,12 +22,12 @@ sub prototype { $lexer or $thisClass->SUPER::prototype }
 #  FOOTER
 
 # <<...>> are processed by the Parse::Template class
-# In <<>> $template and $self are the same Parse::Template instance
 # RegExp must be delimited by // or m!!
 # <<>> can't be imbricated
+# $self is the tokenizer object
+# $template is the Parse::Template instance
 
 my %TEMPLATE = ();
-$lexer->template(new Parse::Template (\%TEMPLATE));	# code template
 
 $TEMPLATE{'WITH_SKIP'} = q@
    if ($LEX_POS < $LEX_LENGTH and $LEX_BUFFER =~ /\G<<$SKIP>>/cg) {
@@ -193,6 +193,7 @@ $TEMPLATE{'FOOTER'} = q!
 }
 !;
 
+$lexer->template(new Parse::Template (%TEMPLATE));	# code template
 1;
 __END__
 

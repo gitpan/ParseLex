@@ -25,10 +25,9 @@ sub prototype { $lexer or $thisClass->SUPER::prototype }
 # <<>> can't be imbricated
 # RegExp must be delimited by // or m!!
 # $self is the tokenizer object
-# $template is the Parse::Template object
+# $template is the Parse::Template instance
 
 my %TEMPLATE = ();
-$lexer->template(new Parse::Template (\%TEMPLATE));	# code template
 
 $TEMPLATE{'WITH_SKIP'} = q@
    if ($LEX_BUFFER ne '' and $LEX_BUFFER =~ s/^<<$SKIP>>//) {
@@ -188,13 +187,14 @@ $TEMPLATE{'FOOTER'} = q!
   $LEX_TOKEN;
 }
 !;
+$lexer->template(new Parse::Template (%TEMPLATE));	# code template
 ####################################################################
 
 my $POS = $lexer->_map('POS');
 sub pos {			
   my $self = shift;
   if (defined $_[0]) {    
-    carp "can't change position";
+    carp "can't change buffer offset";
   } else {
     ${$self->[$POS]};
   }

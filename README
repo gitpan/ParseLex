@@ -1,7 +1,7 @@
 	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 	      o                                   o
-	     o   Parse::Lex/Parse::Token - 2.04    o
-	     o   Parse::Template - 0.02            o
+	     o   Parse::Lex/Parse::Token - 2.05    o
+	     o   Parse::Template - 0.03            o
 	     o   Parse::YYLex - 0.91               o
 	      o                                   o
 	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
@@ -41,6 +41,10 @@ HOW TO BUILD and INSTALL IT
 _____________________________________
 CHANGES, ESPECIALLY INCOMPATIBILITIES
 
+
+MODIFICATIONS SINCE VERSION 2.04 - 26/11/98
+
+o Corrected bugs in Parse::Template
 
 MODIFICATIONS SINCE VERSION 2.03 - 03/11/98
 
