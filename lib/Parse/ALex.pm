@@ -16,11 +16,11 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.14';
+$Parse::ALex::VERSION = '2.15';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace); 
 
-use Parse::Token;	
+use Parse::Token 2.15;	
 use Parse::Template;
 
 				# Default values
@@ -146,7 +146,6 @@ sub token {			# always return a Token object
 *getToken = \&token;
 sub setToken {			# force the token
   my $self = shift;
-  print	STDERR  "setToken(): ", $_[0]->name, "\n"; 
   $self->[$PENDING_TOKEN] = $_[0];
 }
 sub setBuffer {			# not documented

@@ -1,3 +1,9 @@
+MODIFICATIONS SINCE VERSION 2.14 - 27/09/99
+
+o Deleted a trace in Parse::Token
+  (Thanks to Artur Kedzierski <artur@cs.ucr.edu>
+	and  Seth Gordon <sgordon@kenan.com>)
+
 MODIFICATIONS SINCE VERSION 2.13 - 18/09/99
 
 o Added a test using the state machine

@@ -23,18 +23,13 @@ result of (* 2 (+ 3 3)): 12
 Trace is ON in class Parse::Lex
 [Parse::SExpressions] Token read (LEFTP, [\(]): (
 [Parse::SExpressions] Token read (OPERATOR, [-+\/*]): *
-OPERATOR OPERATOR *
 [Parse::SExpressions] Token read (NUMBER, \d+): 2
 [Parse::SExpressions] Token read (LEFTP, [\(]): (
 [Parse::SExpressions] Token read (OPERATOR, [-+\/*]): +
-OPERATOR OPERATOR +
 [Parse::SExpressions] Token read (NUMBER, \d+): 3
 [Parse::SExpressions] Token read (NUMBER, \d+): 3
 [Parse::SExpressions] Token read (RIGHTP, [\)]): )
-setToken(): LEFTP
-LEFTP LEFTP 6
 [Parse::SExpressions] Token read (RIGHTP, [\)]): )
-setToken(): LEFTP
-LEFTP LEFTP 12
+
 
 

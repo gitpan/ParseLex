@@ -53,24 +53,25 @@ Parse::Lex->exclusive('OPERATOR');
 my $lexer;
 Parse::Lex->trace;
 $lexer = Parse::SExpressions->new(
-			   'LEFTP' => '[\(]' => sub {
-			     $lexer->start('OPERATOR');
-			     my($operator, @operands) = $lexer->upto('RIGHTP');
-			     &{$apply{$operator}}(@operands);
-			   },
-			   'RIGHTP' => '[\)]',
-			   'OPERATOR:OPERATOR' => '[-+/*]' => sub { 
-			     $lexer->end('OPERATOR'); $_[1] 
-			   },
-			   'NUMBER' =>  '\d+', 
-			   'ALL:ERROR' => '.*' => sub {	
-			     if ($lexer->state('OPERATOR')) {
-			       die qq!can\'t analyze: "$_[1]"\nOperator expected\n!;
-			     } else {
-			       die qq!can\'t analyze: "$_[1]"\n!;
-			     }
-			   }
-			  );
+				  'LEFTP' => '[\(]' => sub {
+				    $lexer->start('OPERATOR');
+				    my($operator, @operands) = $lexer->upto('RIGHTP');
+				    &{$apply{$operator}}(@operands);
+				  },
+				  'RIGHTP' => '[\)]',
+				  'OPERATOR:OPERATOR' => '[-+/*]' => sub { 
+				    $lexer->end('OPERATOR'); 
+				    $_[1]
+				  },
+				  'NUMBER' =>  '\d+', 
+				  'ALL:ERROR' => '.*' => sub {	
+				    if ($lexer->state('OPERATOR')) {
+				      die qq!can\'t analyze: "$_[1]"\nOperator expected\n!;
+				    } else {
+				      die qq!can\'t analyze: "$_[1]"\n!;
+				    }
+				  }
+				 );
 my $sexp = '(* 2 (+ 3 3))';
 $lexer->from($sexp);
 print "result of $sexp: ", $lexer->next->text, "\n";

@@ -1,10 +1,10 @@
-# Copyright (c)  Philippe Verdret, 1995-1999
 require 5.004;
 use strict qw(vars);
 use strict qw(refs);
 use strict qw(subs);
 
 package Parse::Token;		# or perhaps: Parse::AToken
+$Parse::Token::VERSION = '2.15';
 use Parse::Trace;
 @Parse::Token::ISA = qw(Parse::Trace);
 
@@ -521,7 +521,7 @@ $TEMPLATE{'LEX_FOOTER_WITH_SUB_PART'} = q!
     $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%$TOKEN_ID%%;
     $content = &{$%%$TOKEN_ID%%->action}($LEX_TOKEN, $content);
     ($LEX_TOKEN = $self->getToken)->setText($content);
-print STDERR $LEX_TOKEN->name, " ", $self->[%%$PENDING_TOKEN%%]->name, " $content\n";
+    #print STDERR $LEX_TOKEN->name, " ", $self->[%%$PENDING_TOKEN%%]->name, " $content\n";
     %%$WITH_TRACE ? LEX_FOOTER_WITH_SUB_TRACE_PART() : ''%%
     last CASE;
   };
@@ -688,7 +688,6 @@ sub _parse {
     require  Carp;
     Carp::croak "bad argument number (@_)";
   }
-  #print STDERR "@_\n";
   my ($name, $regex, $action, $expression, $readif, $handler) = 
     ('', '', '', '', '', '');
   my ($key, $value, $escape) = ('', '', '');
@@ -1016,7 +1015,6 @@ sub _parse {
     require  Carp;
     Carp::croak "bad argument number (@_)";
   }
-  #print STDERR "@_\n";
   my ($name, $regex, $action, $expression, $readif, $handler) = 
     ('', '', '', '', '', '');
   my ($key, $value, $start, $end, $escape) = ('', '');

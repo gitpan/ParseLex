@@ -1,5 +1,3 @@
-# Copyright (c) Philippe Verdret, 1995-1999
-
 require 5.004;
 use strict qw(vars);
 use strict qw(refs);

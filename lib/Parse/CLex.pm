@@ -1,5 +1,3 @@
- # Copyright (c) Philippe Verdret, 1995-1999
-
 require 5.004;
 use strict qw(vars);
 use strict qw(refs);
@@ -115,3 +113,24 @@ sub pos {
 1;
 __END__
 
+=head1 NAME
+
+C<Parse::CLex> - Generator of lexical analyzers
+
+=head1 SYNOPSIS
+
+See the C<Parse::Lex> documentation.
+
+=head1 DESCRIPTION
+
+See the C<Parse::Lex> documentation.
+
+=head1 AUTHOR
+
+Philippe Verdret.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1999 Philippe Verdret. All rights reserved.  This module
+is free software; you can redistribute it and/or modify it under the
+same terms as Perl itself.

@@ -98,7 +98,7 @@ __END__
 
 =head1 NAME
 
-C<Parse::LexEvent> - Generator of event-oriented lexical analyzers (1.00 alpha)
+C<Parse::LexEvent> - Generator of event-oriented lexical analyzers (1.00 ALPHA)
 
 =head1 SYNOPSIS
 
