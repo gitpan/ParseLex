@@ -1,8 +1,8 @@
 	       o-o-o-o-o-o-o-o-o-o-o-o-o
 	      o                         o
-	     o   Parse::Lex - 2.12       o
+	     o   Parse::Lex - 2.13       o
 	    o    Parse::LexEvent - 1.00   o
-            o    Parse::Token - 2.12      o
+            o    Parse::Token - 2.13      o
 	    o    Parse::Template - 0.32   o
 	     o   Parse::YYLex - 0.91     o
 	      o                         o

@@ -1,3 +1,11 @@
+MODIFICATIONS SINCE VERSION 2.12 - 13/09/99
+
+o All tests now succeed with Perl 5.00404
+  (problem reported by Paul <schinder@pobox.com>)
+o Added test for the string analysis.
+o Ernest Hill <ErnestH@exegesys.com> discovered a bug 
+  in string analysis.
+
 MODIFICATIONS SINCE VERSION 2.11 - 03/09/99
 
 o Added test for the Parse::EventLex class
@@ -18,7 +26,6 @@ o Corrected bugs in handling of mutiline tokens
 MODIFICATIONS SINCE VERSION 2.08 - 08/04/99
 
 o New version of Parse::Template
-
 o Corrected bug in the from() method 
 
 MODIFICATIONS SINCE VERSION 2.07 - 10/02/1999
@@ -29,15 +36,11 @@ MODIFICATIONS SINCE VERSION 2.05 - 16/01/99
 
 o the from() method accepts IO::File instance.	
   (suggestion of Stefan Becker <stefan.becker@nmp.nokia.com>)
-
 o the expression delimiter in a template is now '%%'
-
 o Regexp are printed as it in traces
   (patch of Kenneth Olwing <K.Olwing@astea.se>)
-
 o Parse::Lex enclosed regexp in a '(?:)', so it now possible 
   to use a '|' without to add parenthesis around a regexp
-
 o Minor bug corrected in the skip() method
 
 MODIFICATIONS SINCE VERSION 2.04 - 26/11/98
@@ -52,17 +55,13 @@ MODIFICATIONS SINCE VERSION 2.02 - 03/11/98
 
 o Conditions seems work as expected
   thanks to Robert Au (rau@datapathsystems.com)
-
 o Parse::Template is now documented.
-
 o Template processing has notably evolved.
 
 MODIFICATIONS SINCE VERSION 2.01
 
 o New examples
-
 o New class: Parse::YYLex (author Vladimir Alexiev)
-
 o New special condition: ALL
 
 MODIFICATIONS SINCE VERSION 1.19

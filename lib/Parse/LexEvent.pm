@@ -1,6 +1,6 @@
 # Copyright (c) Philippe Verdret, 1999
 
-require 5.004;
+require 5.005;
 use strict qw(vars);
 use strict qw(refs);
 use strict qw(subs);

@@ -5,12 +5,12 @@ $Parse::Template::VERSION = '0.32';
 
 use constant DEBUG => 0;	
 
-{ my $id = 0; sub get_id { $id++ } }
+{ my $id = 0; sub getid { $id++ } }
 
 my $PACKAGE = __PACKAGE__;
 sub new {
   my $receiver = shift;
-  my $class = $PACKAGE . '::Sym' . get_id();
+  my $class = $PACKAGE . '::Sym' . getid();
   my $self = bless {}, $class;	# no info in $self
   no strict;
   @{"${class}::ISA"} = ref $receiver || $receiver;
@@ -101,7 +101,18 @@ sub setPart {
   no strict 'refs';
   ${"${class}::template"}{$part} = shift; 
 }
-
+# not documented, doesn't work if $] < 5.005
+# sub setExpressionPattern {
+#   my $class = ref $_[0];
+#   my $start_delimiter = $_[1];
+#   my $end_delimiter = defined $_[2] ? $_[2] : $_[1];
+#   #${"$class::pattern"} = qr/$start_delimiter(.*?)$end_delimiter/s;
+# }
+# # never used, not documented
+# sub getExpressionPattern {
+#   my $class = ref $_[0];
+#   ${"$class::pattern"};
+# }
 #$^S Current state of the interpreter.  Undefined if parsing of the current
 # eval is not finished.  True if inside an eval, otherwise false.
 $Parse::Template::CONFESS = 1; 
@@ -470,8 +481,7 @@ in the classes C<Parse::Lex>, C<Parse::CLex> and C<Parse::Token>.
 
 =head1 NOTES CONCERNING THE CURRENT VERSION
 
-This is an experimental module.  I would be very interested
-to receive your comments and suggestions.
+I would be very interested to receive your comments and suggestions.
 
 =head1 BUG
 

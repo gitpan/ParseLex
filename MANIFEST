@@ -11,6 +11,7 @@ examples/evparser2.pl
 examples/ctokenizer.pl
 examples/ctokens.pl
 examples/every.pl
+examples/from_string.pl
 examples/includes.pl
 examples/sexp.pl
 examples/sexpcond.pl

@@ -16,7 +16,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.12';
+$Parse::ALex::VERSION = '2.13';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace); 
 
@@ -267,9 +267,10 @@ sub from {
 	$self->[$FROM_STRING] = 0;
       }
     } else {			# code doesn't exist
-      print STDERR "STREAM code generation\n" if $debug;
+      print STDERR "Analyze STREAM - code generation\n" if $debug;
       $self->[$FROM_STRING] = 0;
-      $lexer->[$LEXER_SUB] = $DEFAULT_LEXER_SUB;      # 
+      #$self->[$LEXER_SUB] = $DEFAULT_LEXER_SUB;      # 
+      $self->genLex;		# lexer generation
     }
 
     $self->reset;
@@ -284,10 +285,14 @@ sub from {
 	$self->[$FROM_STRING] = 1;
       }
     } else {			# code doesn't exist
-      print STDERR "STRING code generation\n" if $debug;
+      print STDERR "Analyze STRING - code generation\n" if $debug;
       $self->[$FROM_STRING] = 1;
-      $lexer->[$LEXER_SUB] = $DEFAULT_LEXER_SUB;      # 
+      # autogeneration doesn't work, 
+      # cause the generation delete the buffer
+      #$self->[$LEXER_SUB] = $DEFAULT_LEXER_SUB;      # 
+      $self->genLex;		# lexer generation
     }
+
     $self->reset;
     my $buffer = join($", @_); # Data from a list
     ${$self->[$BUFFER]} = $buffer;
@@ -618,6 +623,10 @@ sub genLex {
 				# Closure environnement
   my $LEX_BUFFER = '';		# buffer to analyze
   my $LEX_LENGTH = 0;		# buffer length
+
+#  my $LEX_BUFFER = ${$self->[$BUFFER]};	# buffer to analyze
+#  my $LEX_LENGTH = ${$self->[$RECORD_LENGTH]}; # buffer length
+
   my $LEX_RECORD = 0;		# current record number
   my $LEX_POS = 0;		# current position in buffer
   my $LEX_OFFSET = 0;		# offset from the beginning
@@ -842,14 +851,14 @@ sub parse {
 # Arguments: string or stream to analyze
 # Returns: list of token name and token text
 # Todo: generate a specific lexer sub
-sub analyze {			
+sub analyze {
   my $self = shift;
   unless (defined $_[0]) {
     require Carp;
     Carp::carp "no data to analyze";
   }
   $self->from($_[0]);
-  my $next = $self->[$LEXER_SUB];
+  my $next = $self->[$LEXER_SUB]; 
   my $token = &{$next}($self);
   my @token = ($token->name, $token->text);
   until ($self->[$EOI]) {
