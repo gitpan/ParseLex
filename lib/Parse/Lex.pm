@@ -81,7 +81,7 @@ $TEMPLATE{'HEADER_STREAM'} = q@
 	      $LEX_BUFFER = <$LEX_FH>; 
 	      if (defined($LEX_BUFFER)) {
 		pos($LEX_BUFFER) = $LEX_POS = 0;
-		$LEX_LENGTH = length($LEX_BUFFER);
+		$LEX_LENGTH = CORE::length($LEX_BUFFER);
 		$LEX_RECORD++;
 		<<$SKIP ne '' ? $template->eval('WITH_SKIP_LAST_READ') : '' >>
 	      } else {
@@ -147,7 +147,7 @@ $TEMPLATE{'THREE_PART_TOKEN_STREAM'} = q@
       }
       $LEX_POS = pos($tmp) + $initpos; # "g" is mandatory in the previous regexp
       $LEX_BUFFER = substr($LEX_BUFFER, $beforepos, $initpos) . $tmp;
-      $LEX_LENGTH = length($LEX_BUFFER);
+      $LEX_LENGTH = CORE::length($LEX_BUFFER);
       $LEX_OFFSET += $LEX_POS - $beforepos; # or length($content);
       $content = substr($LEX_BUFFER, $beforepos, $LEX_POS);
       <<$IS_TRACE ? $template->eval('THREE_PART_TOKEN_TRACE') : '' >>

@@ -17,7 +17,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.03';
+$Parse::ALex::VERSION = '2.04';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace);
 use Parse::Token;
@@ -352,7 +352,7 @@ sub from {
     $self->reset;
     my $buffer = join($", @_); # Data from a list
     ${$self->[$BUFFER]} = $buffer;
-    ${$self->[$RECORD_LENGTH]} = length($buffer);
+    ${$self->[$RECORD_LENGTH]} = CORE::length($buffer);
     $self;
   } elsif ($self->[$STREAM]) {
     $self->[$STREAM];

@@ -32,7 +32,7 @@ $lexer->template(new Parse::Template (\%TEMPLATE));	# code template
 
 $TEMPLATE{'WITH_SKIP'} = q@
    if ($LEX_BUFFER ne '' and $LEX_BUFFER =~ s/^<<$SKIP>>//) {
-     $textLength = length($&);
+     $textLength = CORE::length($&);
      $LEX_OFFSET += $textLength;
      $LEX_POS += $textLength;
      <<$IS_HOLD ? $template->eval('HOLD_SKIP') : ''>>
@@ -40,7 +40,7 @@ $TEMPLATE{'WITH_SKIP'} = q@
 @;
 $TEMPLATE{'WITH_SKIP_LAST_READ'} = q@
 	      if ($LEX_BUFFER =~ s/^<<$SKIP>>//) {
-		$textLength = length($&);
+		$textLength = CORE::length($&);
 		$LEX_OFFSET+= $textLength;
 		$LEX_POS = $textLength;
                 <<$IS_HOLD ? $template->eval('HOLD_SKIP') : ''>>
@@ -99,7 +99,7 @@ $TEMPLATE{'SIMPLE_TOKEN'} = q!
    <<$CONDITION>>
    $LEX_BUFFER =~ s/^<<$REGEXP>>// and do {
      $content = $&;
-     $textLength = length($content);
+     $textLength = CORE::length($content);
      $LEX_OFFSET += $textLength;
      $LEX_POS += $textLength;
      <<$IS_TRACE ? $template->eval('SIMPLE_TOKEN_TRACE') : '' >>
@@ -115,7 +115,7 @@ $TEMPLATE{'THREE_PART_TOKEN_STRING'} = q!
    <<$CONDITION>>
    $LEX_BUFFER =~ s/^<<$REGEXP>>// and do {
      $content = $&;
-     $textLength = length($content);
+     $textLength = CORE::length($content);
      $LEX_OFFSET += $textLength;
      $LEX_POS += $textLength;
      <<$IS_TRACE ? $template->eval('THREE_PART_TOKEN_TRACE') : '' >>
@@ -125,7 +125,7 @@ $TEMPLATE{'THREE_PART_TOKEN_STREAM'} = q!
     $LEX_BUFFER =~ s/^<<$REGEXP_START>>// and do {
       my $string = $LEX_BUFFER;
       $content = $&;
-      my $length = length($content) + length($LEX_BUFFER);
+      my $length = CORE::length($content) + CORE::length($LEX_BUFFER);
      do {
        while (not $string =~ /<<$REGEXP_END>>/) {
 	 $string = <$LEX_FH>;
@@ -134,7 +134,7 @@ $TEMPLATE{'THREE_PART_TOKEN_STREAM'} = q!
            $LEX_TOKEN = $Parse::Token::EOI;
 	   croak "unable to find end of token ", $<<$TOKEN_ID>>->name, "";
 	 }
-	 $length = length($string);
+	 $length = CORE::length($string);
 	 $LEX_RECORD++;
 	 $LEX_BUFFER .= $string;
        }
@@ -143,9 +143,9 @@ $TEMPLATE{'THREE_PART_TOKEN_STREAM'} = q!
        $content .= $&;
      } until ($LEX_BUFFER =~ s/^<<$REGEXP_END>>//);
      $content .= $&;
-     $textLength = length($content);
+     $textLength = CORE::length($content);
      $LEX_OFFSET += $textLength;
-     $LEX_POS += $length - length($LEX_BUFFER);	
+     $LEX_POS += $length - CORE::length($LEX_BUFFER);	
      <<$IS_TRACE ? $template->eval('THREE_PART_TOKEN_TRACE') : '' >>
 !;
 $TEMPLATE{'THREE_PART_TOKEN_TRACE'} = q!

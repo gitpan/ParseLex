@@ -11,7 +11,7 @@ $test->expected(\*DATA);
 $test->assert('\n\n$');
 print $test->report(1, sub { 
 		      my $result = $test->result;
-#		      print $result;
+		      #print $result;
 		      $test->expected eq $result;
 		    });
 
