@@ -122,7 +122,7 @@ $CODE{'ROW_HEADER_SIMPLE'} = q!
 !;
 $CODE{'ROW_HEADER_SIMPLE_TRACE'} = q!
      if ($self->[<<$self->_map('TRACE')>>]) {
-       my $trace = "Token read (" . $<<$Lex::id>>->name . ", <<$Lex::begin>>\E): $content"; 
+       my $trace = "Token read (" . $<<$Lex::tokenid>>->name . ", <<$Lex::begin>>\E): $content"; 
        $self->context($trace);
      }
 !;
@@ -145,7 +145,7 @@ $CODE{'ROW_HEADER_THREE_PART_FH'} = q!
 	 if (not defined($string)) { # 
            $self->[<<$self->_map('EOI')>>] = 1;
            $token = $Token::EOI;
-	   croak "unable to find end of token ", $<<$Lex::id>>->name, "";
+	   croak "unable to find end of token ", $<<$Lex::tokenid>>->name, "";
 	 }
 	 $length = length($string);
 	 $recordno++;
@@ -162,28 +162,30 @@ $CODE{'ROW_HEADER_THREE_PART_FH'} = q!
 !;
 $CODE{'ROW_HEADER_THREE_PART_TRACE'} = q!
      if ($self->[<<$self->_map('TRACE')>>]) { # Trace
-       my $trace = "Token read (" . $<<$Lex::id>>->name .
+       my $trace = "Token read (" . $<<$Lex::tokenid>>->name .
           ", <<$Lex::begin>><<$Lex::between>><<$Lex::end>>\E): $content"; 
         $self->context($trace);
      }
 !;
 $CODE{'ROW_FOOTER_SUB'} = q!
-     $<<$Lex::id>>->setstring($content);
-     $token = $<<$Lex::id>>;
-     $content = &{$<<$Lex::id>>->mean}($token, $content);
-     $<<$Lex::id>>->setstring($content);
+     $<<$Lex::tokenid>>->setstring($content);
+     $self->[$PENDING_TOKEN] = $token = $<<$Lex::tokenid>>;
+     $content = &{$<<$Lex::tokenid>>->mean}($token, $content);
+     $<<$Lex::tokenid>>->setstring($content);
+     $token = $self->[$PENDING_TOKEN];
      last CASE;
   };
 !;
 $CODE{'ROW_FOOTER'} = q!
-     $<<$Lex::id>>->setstring($content);
-     $token = $<<$Lex::id>>;
+     $<<$Lex::tokenid>>->setstring($content);
+     $token = $<<$Lex::tokenid>>;
      last CASE;
    };
 !;
 $CODE{'FOOTER'} = q!
   }#CASE
   <<$HOLDTOKEN>>
+  $self->[<<$self->_map('PENDING_TOKEN')>>] = $token;
   $token;
 }
 !;

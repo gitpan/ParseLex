@@ -11,7 +11,7 @@ use strict qw(subs);
 
 package Parse::Lex;
 use vars qw($VERSION);
-$VERSION = '1.16';
+$VERSION = '1.17';
 use Parse::Trace;
 @Parse::Lex::ISA = qw(Parse::Trace);
 use Parse::Token;
@@ -142,7 +142,7 @@ $CODE{'ROW_HEADER_SIMPLE'} = q!
 !;
 $CODE{'ROW_HEADER_SIMPLE_TRACE'} = q!
      if ($self->[<<$self->_map('TRACE')>>]) {
-       my $trace = "Token read (" . $<<$Lex::id>>->name . ", <<$Lex::begin>>\E ): $content"; 
+       my $trace = "Token read (" . $<<$Lex::tokenid>>->name . ", <<$Lex::begin>>\E ): $content"; 
       $self->context($trace);
      }
 !;
@@ -158,7 +158,7 @@ $CODE{'ROW_HEADER_THREE_PART_FH'} = q@
       my $beforepos = $pos;
       my $initpos = pos($buffer);
       my($tmp) = substr($buffer, $initpos);
-				# don't use \G here
+				# don't use \G 
       unless ($tmp =~ /^<<$Lex::between>><<$Lex::end>>/) {
 	my $string = '';
 	local *FH = $self->[<<$self->_map('FH')>>];
@@ -168,7 +168,7 @@ $CODE{'ROW_HEADER_THREE_PART_FH'} = q@
 	    if (not defined($string)) { # 
 	      $self->[<<$self->_map('EOI')>>] = 1;
 	      $token = $Token::EOI;
-	      croak "unable to find end of token ", $<<$Lex::id>>->name, "";
+	      croak "unable to find end of token ", $<<$Lex::tokenid>>->name, "";
 	    }
 	    $recordno++;
 	    $tmp .= $string;
@@ -176,7 +176,7 @@ $CODE{'ROW_HEADER_THREE_PART_FH'} = q@
 	  }
 	} until ($tmp =~ /^<<$Lex::between>><<$Lex::end>>/g);
       }
-      $pos = pos($tmp) + $initpos; # the "g" is mandatory in the previous regexp
+      $pos = pos($tmp) + $initpos; # "g" is mandatory in the previous regexp
       $buffer = substr($buffer, $beforepos, $initpos) . $tmp;
       $length = length($buffer);
       $offset += $pos - $beforepos; # or length($content);
@@ -184,29 +184,30 @@ $CODE{'ROW_HEADER_THREE_PART_FH'} = q@
 @;
 $CODE{'ROW_HEADER_THREE_PART_TRACE'} = q!
      if ($self->[<<$self->_map('TRACE')>>]) { # Trace
-       my $trace = "Token read (" . $<<$Lex::id>>->name .
+       my $trace = "Token read (" . $<<$Lex::tokenid>>->name .
           ", <<$Lex::begin>><<$Lex::between>><<$Lex::end>>\E ): $content"; 
         $self->context($trace);
      }
 !;
 $CODE{'ROW_FOOTER_SUB'} = q!
-    $<<$Lex::id>>->setstring($content);
-    $token = $<<$Lex::id>>;
-    $content = &{$<<$Lex::id>>->mean}($token, $content);
-    $<<$Lex::id>>->setstring($content);
-    #$token = $self->[<<$self->_map('PENDING_TOKEN')>>]; # if tokenis in sub
+    $<<$Lex::tokenid>>->setstring($content);
+    $self->[<<$self->_map('PENDING_TOKEN')>>] = $token = $<<$Lex::tokenid>>;
+    $content = &{$<<$Lex::tokenid>>->mean}($token, $content);
+    $<<$Lex::tokenid>>->setstring($content);
+    $token = $self->[<<$self->_map('PENDING_TOKEN')>>]; # if tokenis in sub
     last CASE;
   };
 !;
 $CODE{'ROW_FOOTER'} = q!
-    $<<$Lex::id>>->setstring($content);
-    $token = $<<$Lex::id>>;
+    $<<$Lex::tokenid>>->setstring($content);
+    $token = $<<$Lex::tokenid>>;
     last CASE;
    };
 !;
 $CODE{'FOOTER'} = q!
   }#CASE
   <<$HOLDTOKEN>>
+  $self->[<<$self->_map('PENDING_TOKEN')>>] = $token;
   $token;
 }
 !;
@@ -214,13 +215,12 @@ $CODE{'FOOTER'} = q!
 $lexer->[$FH] = $DEFAULT_FH;
 $lexer->[$STRING] = 0; # if 1 data come from string
 $lexer->[$SUB] = sub {
-#  $_[0]->[$FH] = $DEFAULT_FH;	# read on default Filehandle
   $_[0]->genlex;		# autogeneration
   &{$_[0]->[$SUB]};		# execution
 };
 my $somevar = '';
 $lexer->[$BUFFER] = \$somevar;		# string to tokenize
-$lexer->[$PENDING_TOKEN] = \$DEFAULT_TOKEN;
+$lexer->[$PENDING_TOKEN] = $DEFAULT_TOKEN;
 $lexer->[$RECORD_NO] = \$somevar;	# number of the current record
 $lexer->[$RECORD_LENGTH] = \$somevar;	# length of the current record
 $lexer->[$OFFSET] = \$somevar;		# offset from the beginning of the analysed stream
@@ -249,9 +249,9 @@ sub reset {			# reset all lexer's state values
   ${$self->[$POS]} = 0;
   $self->[$HOLD_CONTENT] = '';
   ${$self->[$BUFFER]} = ''; 
-  if (${$self->[$PENDING_TOKEN]}) { 
-    ${$self->[$PENDING_TOKEN]}->setstring();
-    ${$self->[$PENDING_TOKEN]} = 0;
+  if ($self->[$PENDING_TOKEN]) { 
+    $self->[$PENDING_TOKEN]->setstring();
+    $self->[$PENDING_TOKEN] = 0;
   }
 }
 
@@ -262,13 +262,14 @@ sub eoi {
 } 
 sub token {			# always return a Token object
   my $self = shift;
-  ${$self->[$PENDING_TOKEN]} or
-    $DEFAULT_TOKEN 
+  $self->[$PENDING_TOKEN] or $DEFAULT_TOKEN 
 } 
-sub tokenis {			# force the token
+sub settoken {			# force the token
   my $self = shift;
-  ${$self->[$PENDING_TOKEN]} = $_[0];
+  $self->[$PENDING_TOKEN] = $_[0];
 }
+*tokenis = \&settoken;
+
 sub setbuffer {			# not documented
   my $self = shift;
   ${$self->[$BUFFER]} = $_[0];
@@ -291,7 +292,7 @@ sub flush {
   $self->[$HOLD_CONTENT] = '';
   $tmp;
 }
-sub less {			# hum...?
+sub less {			# hum... doesn't seem really useful
   my $self = shift;
   if (defined $_[0]) {
     ${$self->[$BUFFER]} = $_[0] . 
@@ -474,11 +475,6 @@ sub new {
   my $receiver = shift;
   my $class = (ref $receiver or $receiver);
 
-  # If one want define a reader without any tokens
-  #  if (not defined($_[0])) {
-  #    croak "arguments of the new method must be a list of token specifications";
-  #  }
-
   # Parse::Lex doesn't work if $[ < 5.004
   #if ($class eq 'Parse::Lex' and $[ < 5.004);
   # warn "doesn\'t work with Perl $[";
@@ -531,7 +527,7 @@ sub genbody {
   my $self = shift;
 
   local $HOLDTOKEN = '' unless $self->[$HOLD];
-  local $Lex::id;	
+  local $Lex::tokenid;	
   my $regexp = '';
   local($Lex::begin, $Lex::between, $Lex::end);
 				# 
@@ -543,11 +539,11 @@ sub genbody {
   my $sub;
   my $token;
   my $body = '';
-  no strict 'refs';		# => ${$Lex::id}
+  no strict 'refs';		# => ${$Lex::tokenid}
   while (@_) {			# list of Token instances
     $token = shift;
     $regexp = $token->regexp;
-    $Lex::id = $self->inpkg . '::' . $token->name;
+    $Lex::tokenid = $self->inpkg . '::' . $token->name;
 
     if (ref($regexp) eq 'ARRAY') {
       $self->[$THREE_PART_RE] = 1;
@@ -642,17 +638,17 @@ sub genlex {
   my $offset = 0;
   $self->[$OFFSET] = \$offset;	# offset from the beginning
   my $token = '';
-  $self->[$PENDING_TOKEN] = \$token;
 
   eval qq!\$self->[$SUB] = sub $analyzer!;
 
-#  print STDERR "$analyzer\n";
-  if ($@) {	# can be usefull ;-)
+  my $debug = 0;
+  if ($@ or $debug) {	# can be useful ;-)
     my $line = 0;
-    $analyzer =~ s/^/sprintf("%3d", $line++)/meg if $@;	# line numbers
+    print STDERR "adf\n";
+    $analyzer =~ s/^/sprintf("%3d", $line++)/meg; # line numbers
     print STDERR "$analyzer\n";
     print STDERR "$@\n";
-    die "\n";
+    die "\n" if $@;
   }
   $self->[$SUB];
 }
@@ -660,7 +656,6 @@ sub genlex {
 # Purpose: returns the lexical analyzer routine
 # Arguments: nothing
 # Returns: the anonymous sub implementing the lexical analyzer
-# Remark: not documented
 sub getsub {
   my $self = shift;
   if (ref($self->[$SUB]) eq 'CODE') {

@@ -37,9 +37,8 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 1.16
+Version 1.17
 Trace is ON in class Parse::CLex
-Use of uninitialized value at Parse/Trace.pm line 30.
 [main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 1
 [main::lexer|Parse::CLex] Token read (ADDOP, [-+]): +
 [main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 2

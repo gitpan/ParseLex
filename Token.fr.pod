@@ -1,7 +1,7 @@
 =head1 NAME
 
-C<Parse::Token> - Classe définissant les lexèmes utilisés par
-Parse::Lex.pm (Alpha 1.16).
+C<Parse::Token> - Classe définissant les tokens utilisés par
+Parse::Lex.pm (1.17).
 
 =head1 SYNOPSIS
 
@@ -39,7 +39,7 @@ méthodes C<next> ou C<isnext> du package C<Token> permettent d'interfacer
 aisément l'analyseur lexical avec un analyseur syntaxique.
 
 Le package C<Parse::Token> n'est pas destiné à être directement
-utilisé.  L'inclusion de ce package doit se faire par le biais d'un
+utilisé.  L'inclusion de ce package se fait par le biais d'un
 C<use Parse::Lex>.
 
 =head2 Méthodes
@@ -54,6 +54,8 @@ l'attribut comme nom de méthode.
 
 Retourne la chaîne de caractères reconnue au moyen de l'objet
 C<Token>.
+
+Synonyme de la méthode text().
 
 =item isnext EXPR
 
@@ -91,12 +93,12 @@ délimitée par des guillemets, des commentaires d'un programme C, etc.
 
 Les expressions régulières sont utilisées pour reconnaître :
 
-=item 1. le début du lexème, 
+1. le début du lexème, 
 
-=item 2. le "corps" du lexème, si cette seconde expression est absente
+2. le "corps" du lexème, si cette seconde expression est absente
 C<Parse::Lex> utilise "(?:.*?)",
 
-=item 3. la fin du lexème, si cette dernière expression est absente
+3. la fin du lexème, si cette dernière expression est absente
 on utilise la première.  (Attention ! La fin du lexème ne peut être à
 cheval sur plusieurs enregistrements).
 
@@ -104,10 +106,10 @@ Exemple.
 
 	  qw(STRING), [qw(" (?:[^"\\\\]+|\\\\(?:.|\n))* ")],
 
-Les expressions régulières permettent des chaînes multilignes
-délimitées par des guillemets, sachant que contre-oblique est utilisé
-pour littéraliser les guillements qui apparaissent au sein de la
-chaîne. Remarquez le quadruplement du contre-oblique.
+Les expressions régulières peuvent reconnaître des chaînes multilignes
+délimitées par des guillemets, sachant que le contre-oblique est
+utilisé pour littéraliser les guillements qui apparaissent au sein de
+la chaîne. Remarquez le quadruplement du contre-oblique.
 
 Voici une variante de l'exemple précédent qui utilise l'option C<s>
 pour inclure la nouvelle-ligne dans les caractères reconnus par "." :
@@ -141,6 +143,8 @@ Un nom d'attribut peut être utilisé comme nom de méthode.
 La valeur de C<EXPR> définit la chaîne de caractères associée au 
 lexème.
 
+Synonyme de la méthode text(EXPR).
+
 =item status EXPR
 
 =item status
@@ -148,6 +152,14 @@ lexème.
 Indique si la dernière recherche du lexème a réussie ou échouée.
 C<status EXPR> permet de forcer le statut à la valeur dénotée
 par EXPR.
+
+=item text EXPR
+
+=item text
+
+C<text> Retourne la chaîne de caractères reconnue au moyen de l'objet
+C<Token>. La valeur de C<EXPR> définit la chaîne de caractères
+associée au lexème.
 
 =item trace OUTPUT 
 
@@ -180,8 +192,6 @@ vos remarques et vos suggestions.
 
 Friedl, J.E.F. Mastering Regular Expressions. O'Reilly & Associates
 1996.
-
-Groc, B., & Bouhier, M. - Programmation par la syntaxe. Dunod 1990.
 
 Mason, T & Brown, D. - Lex & Yacc. O'Reilly & Associates, Inc. 1990.
 

@@ -1,6 +1,6 @@
 # Copyright (c)  Philippe Verdret, 1995-1997
 
-require 5.003;
+require 5.000;
 use strict qw(vars);
 use strict qw(refs);
 use strict qw(subs);
@@ -84,6 +84,12 @@ sub setstring    { $_[0]->[$STRING] = $_[1] } # set token string
 # Returns:
 sub getstring    { $_[0]->[$STRING] }	# get token string 
 
+sub text { 
+  defined($_[1]) ? 
+    $_[0]->[$STRING] = $_[1] : 
+      $_[0]->[$STRING];
+} 
+
 #  name()
 # Purpose:
 # Arguments:
@@ -130,14 +136,14 @@ sub do     { &{$_[1]}($_[0]) }	# why not?
 sub next {			# return the token string 
   my $self = shift;
   my $reader = $self->[$READER];
-  my $pendingToken = ${$reader->[$Lex::PEND_TOKEN]};
+  my $pendingToken = $reader->[$Lex::PEND_TOKEN];
   if ($pendingToken == $Token::EOI) {
     $self->[$STATUS] = $self == $Token::EOI ? 1 : 0;
     return undef;		
   }
   $reader->next() unless $pendingToken;
-  if ($self == ${$reader->[$Lex::PEND_TOKEN]}) {
-    ${$reader->[$Lex::PEND_TOKEN]} = 0; # now no pending token
+  if ($self == $reader->[$Lex::PEND_TOKEN]) {
+    $reader->[$Lex::PEND_TOKEN] = 0; # now no pending token
     my $string = $self->[$STRING];
     $self->[$STRING] = '';
     $self->[$STATUS] = 1;
@@ -156,14 +162,14 @@ sub next {			# return the token string
 sub isnext {
   my $self = shift;
   my $reader = $self->[$READER];
-  my $pendingToken = ${$reader->[$Lex::PEND_TOKEN]};
+  my $pendingToken = $reader->[$Lex::PEND_TOKEN];
   if ($pendingToken == $Token::EOI) {
     ${$_[0]} = undef;
     return $self->[$STATUS] = $self == $Token::EOI ? 1 : 0;
   }
   $reader->next() unless $pendingToken;
-  if ($self == ${$reader->[$Lex::PEND_TOKEN]}) {
-    ${$reader->[$Lex::PEND_TOKEN]} = 0; # now no pending token
+  if ($self == $reader->[$Lex::PEND_TOKEN]) {
+    $reader->[$Lex::PEND_TOKEN] = 0; # now no pending token
     ${$_[0]} = $self->[$STRING];
     $self->[$STRING] = '';
     $self->[$STATUS] = 1;

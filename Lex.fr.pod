@@ -1,6 +1,6 @@
 =head1 NAME
 
-C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.16).
+C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.17).
 
 =head1 SYNOPSIS
 
@@ -51,32 +51,33 @@ analyseur lexical est spécifié au moyen d'un liste de lexèmes (token)
 passée en argument à la méthode C<new> de la classe C<Parse::Lex>.
 
 C<Parse::Lex> ne fonctionne qu'avec perl 5.004. Si votre version est
-antérieure, utilisez la sous-class C<Parse::CLex>.
+antérieure, utilisez la sous-classe C<Parse::CLex>.
 
 Les analyseurs générés par ces deux classes exploitent des stratégies
 d'analyse différentes :
 
-=item 1. C<Parse::Lex> utilise C<pos()>, associé à "\\G" pour
+1. C<Parse::Lex> utilise C<pos()>, associé à "\G" pour
 effectuer l'analyse,
 
-=item 2. C<Parse::CLex> effectue une analyse avec consommation des
+2. C<Parse::CLex> effectue une analyse avec consommation des
 tokens reconnus.
 
 Attention ! Les analyseurs de la classe C<Parse::CLex> ne permettent
 pas d'utiliser des expressions régulières avec ancrage.
 
-Les lexèmes sont des objets de la classe C<Parse::Token>, livré
-avec C<Parse::Lex>. La définition d'un lexème comporte ordinairement
-deux arguments : un non symbolique (comme C<INTEGER>), suivi d'une
+Les lexèmes sont des objets de la classe C<Parse::Token>, livré avec
+C<Parse::Lex>. La définition d'un lexème comporte ordinairement deux
+arguments : un non symbolique (comme C<INTEGER>), suivi d'une
 expression régulière. Si une fonction anonyme est donnée en troisième
-argument, elle est exécutée lorsque le lexème est reconnu.
+argument, elle est exécutée lorsque le lexème est reconnu. Le retour
+de cette fonction sera le contenu du token.
 
 L'ordre dans lequel l'analyseur lexical examine les expressions
 régulières est déterminé par l'ordre dans lequel ces expressions sont
 passées en argument à la méthode C<new>. Le lexème retourné par
 l'analyseur lexical correspond à la première expression qui s'apparie
 avec le début du flot de caractères à analyser (la stratégie est
-différence de celle adoptée par l'analyseur lexical "Lex" qui retourne
+différence de celle adoptée par l'analyseur lexical "lex" qui retourne
 la plus longue chaîne de toutes celles qu'il est possible de
 reconnaître). Le lexème est un objet de la classe C<Parse::Token>.
 
@@ -118,7 +119,7 @@ Pour segmenter la chaîne "1+2" on peut par exemple écrire :
 	$lexer->from("1+2");
 	$lexer->every (sub { 
 	  print $_[0]->name, "\t";
-	  print $_[0]->getstring, "\n";
+	  print $_[0]->getstring, "\n"; 
 	});
 
 Le premier argument de la fonction anonyme est l'objet Token reconnu.
@@ -127,7 +128,9 @@ Le premier argument de la fonction anonyme est l'objet Token reconnu.
 
 C<from> permet d'indiquer la source des données à analyser.
 L'argument de cette méthode peut être une référence à un filehandle ou
-une liste de chaînes de caractères. Exemples :
+une liste de chaînes de caractères. 
+
+Exemple.
 
 	$lexer->from(\*DATA);
 	$lexer->from('les données à analyser');
@@ -137,6 +140,19 @@ une liste de chaînes de caractères. Exemples :
 Si la conservation des chaînes consommées est activée, C<flush>
 retourne et vide le buffer contenant les chaînes de caractères
 reconnues jusqu'ici.
+
+=item getsub
+
+C<getsub> retourne la fonction anonyme réalisant l'analyse lexicale.
+
+Exemple.
+
+	my $token = '';
+	my $sub = $lexer->getsub;
+	while (($token = &$sub($lexer)) ne $Token::EOI) {
+	  print $token->name, "\t";
+	  print $token->getstring, "\n";
+	}
 
 =item hold EXPR
 
@@ -157,14 +173,20 @@ La valeur de EXPR est placée au début du flot de données.
 Provoque la recherche du prochain lexème. Retourne l'objet Token
 reconnu.  Retourne l'objet C<Token::EOI> en fin de données.
 
+Exemples.
+
+	$lexer = Parse::Lex->new(@token);
+	print $lexer->next->name;   # print the token type
+	print $lexer->next->text;   # print the token content
+
 =item new
 
 Crée et retourne un nouvel analyseur lexical. L'argument de la méthode
 est une liste de triplets comportant : le nom symbolique du lexème,
 l'expression régulière nécessaire à sa reconnaissance et
 éventuellement une fonction anonyme exécutée lors de la reconnaissance
-du lexème.  Pour chaque triplet, un objet de type
-C<Parse::Token> est créé.
+du lexème.  Pour chaque triplet, un objet de type C<Parse::Token> est
+créé.
 
 L'analyseur lexical construit par C<new> cherche tour à tour à apparier
 chaque expression régulière avec le début du flot de données à
@@ -204,7 +226,7 @@ suivante :
 	  $symbol{"\L$name"} = [${$name}, ''];
 	}
 
-C<${$name}> est l'objet Token.
+${$name} est l'objet Token.
 
 Lors de la phase d'analyse lexicale on pourra utiliser les tokens de
 la manière suivante :
@@ -212,12 +234,15 @@ la manière suivante :
 	qw(IDENT [a-zA-Z][a-zA-Z0-9]*),  sub {		      
 	   $symbol{$_[1]} = [] unless defined $symbol{$_[1]};
 	   my $type = $symbol{$_[1]}[0];
-	   $lexer->tokenis((not defined $type) ? $VAR : $type);
-	   $_[1];
+	   $lexer->settoken((not defined $type) ? $VAR : $type);
+	   $_[1];  # THE TOKEN CONTENT
 	 }
 
 Ce qui permet d'indiquer que tout symbole dont le type est inconnu est
 une variable.
+
+Remarque. La fonction anonyme associée au token reçoit en argument
+l'objet token. Le contenu du token est le retour de la fonction anonyme.
 
 =item offset
 
@@ -240,7 +265,7 @@ méthode C<from>. Retourne le résultat de la lecture.
 =item recordno
 
 Retourne le numéro de l'enregistrement courant. Retourne toujours 1 si
-on analyse une chaîne de caractères. La méthode readline() incrémente ce
+on analyse une chaîne de caractères. La méthode readline incrémente ce
 numéro.
 
 =item reset
@@ -265,10 +290,12 @@ Retourne l'objet correspondant au dernier lexème reconnu. En l'absence
 de token lu, retourne un token spécial dont le nom est C<default
 token.
 
-=item tokenis TOKEN
+=item settoken TOKEN
 
 Force le lexème à C<TOKEN>. Utile pour requalifier un lexème à
 l'intérieur de la fonction anonyme associée à ce lexème.
+
+A terme annule et remplace la méthode tokenis(TOKEN).
 
 =item trace OUTPUT
 
@@ -283,6 +310,9 @@ filehandle vers laquelle la trace va être dirigée.
 
 =head1 EXEMPLES
 
+ctokenizer.pl - Segmentation d'un flot de données au moyen
+de la classe C<Parse::CLex>.
+
 tokenizer.pl - Segmentation d'un flot de données au moyen
 de la classe C<Parse::Lex>.
 
@@ -290,8 +320,8 @@ every.pl - Utilisation de la méthode C<every>.
 
 =head1 BUGS
 
-C<Parse::Lex> ne fonctionne qu'avec perl 5.004. Si votre version est
-antérieure, utilisez la sous-class C<Parse::CLex>.
+C<Parse::Lex> ne fonctionne qu'avec perl 5.004. Si votre version de
+Perl est antérieure, utilisez la classe C<Parse::CLex>.
 
 Les analyseurs de la classe C<Parse::CLex> ne permettent pas
 d'utiliser des expressions régulières avec ancrage.

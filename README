@@ -1,6 +1,6 @@
 	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 	      o                                       o
-	     o  Parse::Lex.pm/Parse::Token.pm - 1.16   o
+	     o  Parse::Lex.pm/Parse::Token.pm - 1.17   o
 	      o                                       o
 	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 
@@ -40,6 +40,23 @@ HOW TO BUILD and INSTALL IT
 
 _____________________________________
 CHANGES, ESPECIALLY INCOMPATIBILITIES
+
+Modifications of the 1.16 version
+
+o Parse::Lex - Evolutions
+
+  - documentation enhancements
+  - new methods: 
+    settoken() replace the depreciated method tokenis().
+
+o Parse::Token - Evolutions
+  
+  - documentation enhancements
+  - new methods: text(EXPR)/text()
+
+o Parse::Lex - Bugs
+
+  - "Makefile" problems
 
 Modifications of the 1.15 version
 
