@@ -10,8 +10,9 @@ use Parse::ALex;
 use Carp;
 @Parse::Lex::ISA = qw(Parse::ALex);
 
-my $lexer = bless [@{Parse::Lex->SUPER::prototype()}];
-sub prototype { $lexer }
+my $thisClass = &{sub { caller }};
+my $lexer = $thisClass->clone;
+sub prototype { $lexer or $thisClass->SUPER::prototype }
 
 ####################################################################
 #Structure of the next routine:
@@ -129,7 +130,7 @@ $TEMPLATE{'ROW_HEADER_THREE_PART_RE_STREAM'} = q@
       my $initpos = pos($buffer);
       my($tmp) = substr($buffer, $initpos); 
 				# don't use \G 
-      unless ($tmp =~ /^<<$template->env('middle')>><<$template->env('end')>>/) {
+      unless ($tmp =~ /^<<$template->env('middle')>><<$template->env('end')>>/g) {
 	my $text = '';
 	do {
 	  while (1) {
@@ -172,9 +173,9 @@ $TEMPLATE{'ROW_FOOTER_SUB'} = q!
 $TEMPLATE{'ROW_HEADER_SUB_TRACE'} = q!
     if ($self->[<<$self->_map('PENDING_TOKEN')>>] ne $token) {
      if ($self->[<<$self->_map('TRACE')>>]) { # Trace
-	    $self->context("Token type has changed\n" .
-			   "Type is: " . $token->name .
-			   " and content is: $content\n");
+	    $self->context("Token type has changed - " .
+			   "Type: " . $token->name .
+			   " - Content: $content\n");
 	  }
 	}
 !;

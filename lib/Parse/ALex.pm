@@ -16,7 +16,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.01';
+$Parse::ALex::VERSION = '2.02';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace);
 use Parse::Token;
@@ -33,12 +33,6 @@ my $DEFAULT_STREAM = \*STDIN;	# Input Filehandle
 my $eoi = 0;			# 1 if end of imput 
 my $DEFAULT_TOKEN = Parse::Token->new('DEFAULT', '.*'); # default token
 my $pendingToken = 0;		# 1 if there is a pending token
-				# You can access to these variables from outside!
-
-
-my $lexer = bless [];		# Prototypical instance
-sub prototype { $lexer }
-
 my $index = -1;
 my %_map;			# Define a mapping between element names and numbers
 my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN, 
@@ -69,7 +63,10 @@ my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN,
        TOKEN_LIST);
 sub _map { $_map{($_[1])} }	
 
-my $somevar = '';
+my $somevar = '';		# use gensym???
+				# Create and instanciate a prototypical instance
+my $lexer = $thisClass->clone;	
+sub prototype { $lexer or [] }
 $lexer->[$STREAM] = $DEFAULT_STREAM;
 $lexer->[$FROM_STRING] = 0; # 1 if you must analyze a string
 $lexer->[$BUFFER] = \$somevar;		# string to tokenize
@@ -82,43 +79,42 @@ $lexer->[$EOI] = $eoi;
 $lexer->[$SKIP] = $skip;	# a pattern to skip
 $lexer->[$HOLD] = $hold;	# save or not what is consumed
 $lexer->[$HOLD_TEXT] = '';	# saved string
-$lexer->[$THREE_PART_RE] = 0;	# 1 if three part regexp
+$lexer->[$THREE_PART_RE] = 0;	# 1 if token is defined with a three part regexp
 $lexer->[$TEMPLATE] = new Parse::Template; # code template
 
 				# Lexer code: [HEADER, BODY, FOOTER]
-$lexer->[$STREAM_CODE] = [];	# cached version
-$lexer->[$STRING_CODE] = [];	# cached version
+$lexer->[$STREAM_CODE] = [];	# cached subroutine definition
+$lexer->[$STRING_CODE] = [];	# cached subroutine definition
 $lexer->[$CODE] = [];		# current lexer
-				# Anonymous routines
-
 $lexer->[$HANDLES] = [];	# lexer closure environnement
-$lexer->[$SUB] = sub {
+$lexer->[$SUB] = my $DEFAULT_SUB = sub {
   $_[0]->genLex;		# lexer autogeneration
   &{$_[0]->[$SUB]};		# lexer execution
 };
 $lexer->[$STREAM_SUB] = sub {};	# cache for the stream lexer
 $lexer->[$STRING_SUB] = sub {};	# cache for the string lexer
 				# State machine
-$lexer->[$EXCLUSIVE_COND] = {};
-$lexer->[$INCLUSIVE_COND] = {};
+$lexer->[$EXCLUSIVE_COND] = {};	# exclusive conditions
+$lexer->[$INCLUSIVE_COND] = {};	# inclusive conditions
 $lexer->[$CODE_STATE_MACHINE] = ''; # definition of the state machine
-$lexer->[$STATES] = { 'INITIAL' => \$somevar };	# state machine
+$lexer->[$STATES] = { 'INITIAL' => \$somevar };	# state machine, define a class will be better
 $lexer->[$STACK_STATES] = [];	# stack of states, not used
 $lexer->[$TRACE] = $trace;
 $lexer->[$INIT] = 1;		# true at object creation
 $lexer->[$TOKEN_LIST] = [];	# Tokens
 
-my $tokenClass = 'Parse::Token'; # Default token class
+				# 
+my $TOKEN_CLASS = 'Parse::Token'; # Default token class
 sub tokenClass { 
   if (defined $_[1]) {
     no strict qw/refs/;
-    ${"$tokenClass" . "::PENDING_TOKEN"} = $PENDING_TOKEN; 
-    $tokenClass = $_[1];
+    ${"$TOKEN_CLASS" . "::PENDING_TOKEN"} = $PENDING_TOKEN; 
+    $TOKEN_CLASS = $_[1];
   } else {
     $_[1] 
   }
 }
-$lexer->tokenClass($tokenClass);
+$lexer->tokenClass($TOKEN_CLASS);
 
 sub reset {			# reset all lexer's state values
   my $self = shift;
@@ -240,13 +236,15 @@ sub next { &{$_[0]->[$SUB]} }
 # Todo: generate a specific lexer
 sub analyze {			
   my $self = shift;
-  my $from = shift;
-  $self->from($from);
-  my $sub = $self->[$SUB];
-  my $token = &{$sub}($self);
+  unless (defined $_[0]) {
+    carp "no data to analyze";
+  }
+  $self->from($_[0]);
+  my $next = $self->[$SUB];
+  my $token = &{$next}($self);
   my @token = ($token->name, $token->text);
   while (not $self->[$EOI]) {
-    $token = &{$sub}($self);
+    $token = &{$next}($self);
     push (@token, $token->name, $token->text);
   }
   @token;
@@ -268,6 +266,7 @@ sub every {
   }
   undef;
 }
+
 # Purpose: define the data input
 # Parameters: 
 # 1. reference to a filehandle 
@@ -348,33 +347,41 @@ sub from {
   }
 }
 # Not documented
-# Purpose: direct access to some internal variables of a lexer object
-# Arguments: nil
+# Purpose: set/get environnement of the lexer closure
+# Arguments: see definition
 # Returns: references to some internal object fields
+# todo: test type and number of arguments
+# name closureEnv ???
 sub handles {
   my $self = shift;
-  ($self->[$BUFFER], 
-   $self->[$RECORD_LENGTH],
-   $self->[$LINE], 
-   $self->[$POS], 
-   $self->[$OFFSET],
-   $self->[$STATES],
-  )
+  if (@_) {
+    ($self->[$BUFFER], 
+     $self->[$RECORD_LENGTH],
+     $self->[$LINE], 
+     $self->[$POS], 
+     $self->[$OFFSET],
+     $self->[$STATES],
+    ) = @_;
+  } else {
+    ($self->[$BUFFER], 
+     $self->[$RECORD_LENGTH],
+     $self->[$LINE], 
+     $self->[$POS], 
+     $self->[$OFFSET],
+     $self->[$STATES],
+    )
+  }
 }
 sub _saveHandles {
   my $self = shift;
-  $self->[$HANDLES] = [$self->handles];
+  @{$self->[$HANDLES]} = $self->handles();
 }
+#($self->[$BUFFER], $self->[$RECORD_LENGTH], $self->[$LINE], $self->[$POS], 
+#$self->[$OFFSET], $self->[$STATES]) = @{$self->[$HANDLES]};
 sub _switchHandles {
   my $self = shift;
   my @tmp = $self->handles();
-  ($self->[$BUFFER], 
-   $self->[$RECORD_LENGTH],
-   $self->[$LINE], 
-   $self->[$POS], 
-   $self->[$OFFSET],
-   $self->[$STATES],
-  ) = @{$self->[$HANDLES]};
+  $self->handles(@{$self->[$HANDLES]});
   @{$self->[$HANDLES]} = @tmp;
 }
 
@@ -419,9 +426,13 @@ sub hold {
   my $self = shift;
   if (ref $self) {		# Instance method
       $self->[$HOLD] = not $self->[$HOLD];
-      $self->genHeader();
-      $self->genFooter();
-      $self->genLex();
+
+      # delete the code already generated
+      @{$lexer->[$STREAM_CODE]} = ();
+      @{$lexer->[$STRING_CODE]} = ();
+      @{$lexer->[$CODE]} = ();		
+      $lexer->[$SUB] = $DEFAULT_SUB;
+
   } else {			# Class method
     $self->prototype()->[$HOLD] = not $self->prototype()->[$HOLD];
   }
@@ -441,10 +452,14 @@ sub skip {
   if (ref $self) {		# Instance method
     if (defined($_[0]) and $_[0] ne $self->[$SKIP]) {
       print STDERR "skip value: '$_[0]'\n" if $debug;
-
       $self->[$SKIP] = $_[0];
-      $self->genHeader();
-      $self->genLex();
+
+      # delete the code already generated
+      @{$lexer->[$STREAM_CODE]} = ();
+      @{$lexer->[$STRING_CODE]} = ();
+      @{$lexer->[$CODE]} = ();		
+      $lexer->[$SUB] = $DEFAULT_SUB;
+
     } else {
       $self->[$SKIP];
     }
@@ -456,42 +471,38 @@ sub skip {
   }
 }
 
-# Purpose: create the lexical analyzer, with the associated tokens
-# - the new lexer is a copy of the prototypical lexer if used as a class method
-# - the new lexer is a copy of the message receiver if used as an instance method
-# Arguments: list of token specifications
-# Returns: a lex object
-sub _clone {
+# not documented
+# Purpose: returns a 
+# - a copy of the prototypical lexer if used as a class method
+# - a copy of the message receiver if used as an instance method
+sub clone {
   my $receiver = shift;
-  my $class = (ref $receiver or $receiver);
-
-  if ($class eq $thisClass) {
-    croak "'$class' is an abstract class, can't create an instance"
-
+  my $class;
+  if ($class = ref $receiver) {		# Instance method: clone the current instance
+    bless [@{$receiver}], $class; 
+  } else {			# Class method: clone the Prototype
+    bless [@{$receiver->prototype}], $receiver; 
   }
-  my $prototype;
-  my $self;
-  
-  if (ref $receiver) {		# Instance method: create from the current instance
-    $self = bless [@{$receiver}], $class; 
-  } else {			# Class method: create from the Prototype
-    $self = bless [@{$class->prototype->reset}], $class; 
-  }
-
-  $self->template->partOf($self); # now the template is part of self
-
-  $self->[$INIT] = 1;
-  $self->[$IN_PKG] = (caller(1))[0]; # From which package?
-  $self;
 }
 # Purpose: create the lexical analyzer
 # Arguments: list of tokens or token specifications
 # Returns: a lex object
 sub new {
-  my $self = shift;
-  $self = $self->_clone;
+  my $receiver = shift;
+  my $class = (ref $receiver or $receiver);
+
+  if ($class eq $thisClass) {
+    croak "can't create an instance of '$class' abstract class"
+  }
+
+  my $self = $receiver->clone;
+  $self->reset;
+  $self->template->partOf($self); # now the template is part of self
+  $self->[$INIT] = 1;
+  $self->[$IN_PKG] = (caller(0))[0]; # From which package?
+
   if (@_) {
-    my @token = $tokenClass->factory(@_);
+    my @token = $TOKEN_CLASS->factory(@_);
     my $token;
     foreach $token (@token) {	
       $token->lexer($self);	# Attach each token to its lexer
@@ -623,11 +634,11 @@ sub getCode {
 
 # Purpose: Generate the lexical analyzer
 # Arguments: 
-#A Returns: the anonymous subroutine implementing the lexical analyzer
+# A Returns: the anonymous subroutine implementing the lexical analyzer
 # Remark: not documented
 sub genLex {
   my $self = shift;
-  $self->genCode unless $self->getCode;	
+  $self->genCode unless @{$self->[$CODE]};	
 
 				# closure environnement
   my $buffer = '';
@@ -636,20 +647,19 @@ sub genLex {
   my $pos = 0;
   my $offset = 0;
   my $token = '';
+  my %state = ();
 
-  $self->[$BUFFER] = \$buffer;
-  $self->[$RECORD_LENGTH] = \$length;
-  $self->[$LINE] = \$line;
-  $self->[$POS] = \$pos;	# current position 
-  $self->[$OFFSET] = \$offset;	# offset from the beginning
+  $self->handles(\(
+		 $buffer,	# buffer to analyze
+		 $length,	# buffer length
+		 $line,		# current line number
+		 $pos,		# current position 
+		 $offset,	# offset from the beginning
+		 %state,
+		));		
 
   my $fhr = \$self->[$STREAM];
-
-				# The state machine
-  my %state = ();
-  $self->[$STATES] = \%state;
   my $stateMachine = $self->genStateMachine();
-
   my $analyzer = $self->getCode();
   eval qq!$stateMachine; \$self->[$SUB] = sub $analyzer!;
 
@@ -658,6 +668,7 @@ sub genLex {
     my $line = 0;
     $stateMachine =~ s/^/sprintf("%3d", $line++)/meg; # line numbers
     $analyzer =~ s/^/sprintf("%3d", $line++)/meg;
+    $analyzer =~ s/\t/        /mg;
     print STDERR "$stateMachine$analyzer\n";
     print STDERR "$@\n";
     die "\n" if $@;
@@ -679,6 +690,8 @@ sub getSub {
 				# 
 				# The State Machine
 				# 
+#package Parse::State;
+# todo: create a Parse::State  class
 sub inclusive {
   my $self = shift;
   if (ref $self) {
@@ -706,15 +719,20 @@ sub exclusive {
 sub genCondition {
   my $self = shift;
   my $specif = shift;
+  return '' if $specif =~ /^ALL:/; # special condition
+
   my $prefix = '';		# genCondition
   my $condition = '';
   my $tmp = '';
   my %exclusion = %{$self->exclusive};
   my %inclusion = %{$self->inclusive};
   my $stateName = '';
-  while ($specif =~ /^(.+):/g) {	# Ex. A:B:C: or A,C:
+  while ($specif =~ /^(.+):/g) {	# Ex. A:B:C: or A,C: 
     ($prefix) = ($1);
     while ($prefix =~ /(\w+)/g) {
+      unless (defined $exclusion{$1} or defined $inclusion{$1}) {
+	croak "'$1' condition not defined";
+      }
       delete $exclusion{$1};
       delete $inclusion{$1};
       if ($condition)  {
@@ -740,12 +758,12 @@ sub genCondition {
 }
 sub genStateMachine { 
   my $self = shift;
+  my $somevar;
+
   my $stateDeclaration = ' my $INITIAL = 1; ' .
       q!$state{'INITIAL'} = \\$INITIAL;! . "\n";
   my $stateName = '';
-  my %exclusion = %{$self->exclusive};
-  my %inclusion = %{$self->inclusive};
-  foreach $stateName (keys (%inclusion), keys(%exclusion)) {
+  foreach $stateName (keys (%{$self->exclusive}), keys(%{$self->inclusive})) {
     $stateDeclaration .=
       q!my $! . "$stateName" . q! = 0; ! . 
 	q!$state{'! . "$stateName" . q!'} = \\$! . "$stateName" . q!;!  . "\n";
@@ -774,7 +792,7 @@ sub setState {
   my $state = shift;
   ${$self->[$STATES]->{$state}} = shift;
 }
-sub state {
+sub state {			# get/set state
   my $self = shift;
   my $state = shift;
   if (@_)  {
@@ -792,8 +810,6 @@ sub start {
     if (exists $self->[$EXCLUSIVE_COND]->{$state}) {
       $self->_restart;
     }
-    $DB::single = 1;
-    print STDERR "start: $state $self->[$STATES]\n";
     ${$self->[$STATES]->{$state}} = 1;
   }
 }

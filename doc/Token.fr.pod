@@ -1,7 +1,7 @@
 =head1 NAME
 
 C<Parse::Token> - Classe définissant les tokens utilisés par
-Parse::Lex.pm (Beta 2.01).
+Parse::Lex.pm (Beta 2.02).
 
 =head1 SYNOPSIS
 

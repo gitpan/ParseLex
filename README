@@ -1,12 +1,16 @@
-	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
-	      o                                       o
-	      o Parse::Lex.pm/Parse::Token.pm - 2.01  o
-	      o                                       o
-	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
+	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
+	      o                                   o
+	     o   Parse::Lex/Parse::Token - 2.02    o
+	     o   Parse::YYLex - 0.91               o
+	      o                                   o
+	       o-o-o-o-o-o-o-o-o-o-o-o--o-oo-o-o-o
 
 
 The Parse::Lex.pm module for perl5 is an object-oriented generator of
 lexical analyzers.
+
+This distribution includes Parse::YYLex (writed by Vladimir Alexiev)
+a lexer generator that you can use with yacc parsers.
 
  *************************WARNING!*************************************
  * The Parse::Lex class doesn't work if your perl version is lower    *
@@ -25,7 +29,6 @@ Philippe Verdret <philippe.verdret@sonovision-itep.fr>
 Vladimir Alexiev <vladimir@cs.ualberta.ca> and Ocrat 
 for the English translation of the pod documentation.
 
-
 ___________________________
 HOW TO BUILD and INSTALL IT
 
@@ -38,6 +41,14 @@ HOW TO BUILD and INSTALL IT
 _____________________________________
 CHANGES, ESPECIALLY INCOMPATIBILITIES
 
+
+MODIFICATIONS SINCE VERSION 2.01
+
+o New examples
+
+o New class: Parse::YYLex (Vladimir Alexiev)
+
+o New special condition: ALL
 
 MODIFICATIONS SINCE VERSION 1.19
 

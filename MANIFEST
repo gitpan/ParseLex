@@ -1,12 +1,15 @@
-Lex.fr.pod
-Lex.pod
 MANIFEST
+Makefile
 Makefile.PL
 README
-Token.fr.pod
-Token.pod
+doc/Lex.fr.pod
+doc/Lex.pod
+doc/Token.fr.pod
+doc/Token.pod
 examples/ctokenizer.pl
 examples/every.pl
+examples/sexp.pl
+examples/sexpcond.pl
 examples/tokenizer.pl
 examples/tokens.pl
 lib/Parse/ALex.pm
@@ -16,6 +19,7 @@ lib/Parse/Template.pm
 lib/Parse/Token-t.pm
 lib/Parse/Token.pm
 lib/Parse/Trace.pm
+lib/Parse/YYLex.pm
 t/W.pm
 t/test1.t
 t/test2.t

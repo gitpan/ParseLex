@@ -72,7 +72,7 @@ sub isToken { 1 }
 sub factory { 
   my $self = shift;
 
-  if (not defined($_[0])) {
+  unless (defined($_[0])) {
     croak "arguments must be a list of token specifications";
   }
 
@@ -83,7 +83,7 @@ sub factory {
   my $nextArg;
   while (@_) {
     $nextArg = shift;
-    if (ref $nextArg and $nextArg->can('isToken')) {	# it's already a token object...
+    if (ref $nextArg and $nextArg->isToken) { # it's already a token object...
       push @token, $nextArg;
     } else {			# parse the specification
       my($name, $regexp) = ($nextArg, shift);
@@ -205,6 +205,7 @@ sub lexer {
     $_[0]->[$LEXER];
   }
 }	
+# not documented
 sub do { 
   my $self = shift;
   &{(shift)}($self, @_)

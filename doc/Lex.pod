@@ -1,6 +1,6 @@
 =head1 NAME
 
-C<Parse::Lex>  - Generator of lexical analyzers (Beta 2.01).
+C<Parse::Lex>  - Generator of lexical analyzers (Beta 2.02).
 
 =head1 SYNOPSIS
 
@@ -100,7 +100,7 @@ C<Token::EOI> (End Of Input).
 You can associate start conditions with the rules for recognizing
 the tokens that comprise your lexical analyzer (this is similar to what
 Flex provides).  When start conditions are used, the rule which succeeds
-is no longer necessarily the first rule matching the input stream.
+is no longer necessarily the first rule that matches.
 
 A token symbol may be preceded by a start condition specifier for
 the associated recognition rule. For example:
@@ -159,14 +159,16 @@ Example (borrowed from the documentation of Flex):
  Parse::Lex->exclusive('expect');
  $lexer = Parse::Lex->new(@token);
 
+The special start condition C<ALL> is always verified.
+
 =head2 Methods
 
 =over 4
 
 =item analyze EXPR
 
-Analyzes EXPR and returns a list of pairs consisting of a token name
-followed by recognized text. EXPR can be a character string or a
+Analyzes C<EXPR> and returns a list of pairs consisting of a token name
+followed by recognized text. C<EXPR> can be a character string or a
 reference to a filehandle.
 
 Examples:
@@ -188,7 +190,7 @@ value length of the buffer (C<length()>).
 
 =item end EXPR
 
-Deactivates condition EXPR.
+Deactivates condition C<EXPR>.
 
 =item eoi
 
@@ -427,6 +429,10 @@ ctokenizer.pl - Scan a stream of data using the C<Parse::CLex> class.
 tokenizer.pl - Scan a stream of data using the C<Parse::Lex> class.
 
 every.pl - Use of the C<every> method.
+
+sexp.pl - Interpreter for prefix arithmetic expressions.
+
+sexpcond.pl - Interpeter for prefix arithmetic expressions, using conditions.
 
 =head1 BUGS
 

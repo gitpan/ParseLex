@@ -1,4 +1,4 @@
-# Copyright (c) Philippe Verdret, 1995-1998
+ # Copyright (c) Philippe Verdret, 1995-1998
 
 require 5.003;
 use strict qw(vars);
@@ -10,8 +10,9 @@ use Parse::ALex;
 use Carp;
 @Parse::CLex::ISA = qw(Parse::ALex);
 
-my $lexer = bless [@{Parse::CLex->SUPER::prototype()}];
-sub prototype { $lexer }
+my $thisClass = &{sub { caller }};
+my $lexer = $thisClass->clone;
+sub prototype { $lexer or $thisClass->SUPER::prototype }
 
 ####################################################################
 #Structure of the next routine:
@@ -167,9 +168,9 @@ $TEMPLATE{'ROW_FOOTER_SUB'} = q!
 $TEMPLATE{'ROW_HEADER_SUB_TRACE'} = q!
         if ($self->[<<$self->_map('PENDING_TOKEN')>>] ne $token) {
 	  if ($self->isTrace) {
-	    $self->context("token type has changed\n" .
-			   "Type is: " . $token->name .
-			   " and content is: $content\n");
+	    $self->context("token type has changed - " .
+			   "Type: " . $token->name .
+			   " - Content: $content\n");
 	  }
 	}
 !;

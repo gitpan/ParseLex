@@ -1,6 +1,6 @@
 =head1 NAME
 
-C<Parse::Lex> - Générateur d'analyseurs lexicaux (Beta 2.01).
+C<Parse::Lex> - Générateur d'analyseurs lexicaux (Beta 2.02).
 
 =head1 SYNOPSIS
 
@@ -100,8 +100,7 @@ C<Parse::Token> dont le nom est C<EOI> (End Of Input).
 Il est possible d'associer des conditions de déclenchement aux règles
 de reconnaissance de tokens qui composent votre analyseur lexical (à
 la manière de ce l'on trouve dans FLEX). Grâce aux conditions la règle
-qui réussit n'est plus obligatoirement la première qui s'apparie avec
-la flot à analyser.
+qui réussit n'est plus obligatoirement la première qui s'apparie.
 
 Toute désignation de symbole peut être précédée par la spécification
 de conditions d'activation de la règle de reconnaissance associée. Par
@@ -165,14 +164,16 @@ Exemple (emprunté à la documentation de FLEX).
  Parse::Lex->exclusive('expect');
  $lexer = Parse::Lex->new(@token);
 
+La condition spéciale C<ALL> est toujours vérifiée.
+
 =head2 Méthodes
 
 =over 4
 
 =item analyze EXPR
 
-Analyze EXPR et retourne une liste de couples composés d'un nom de
-token suivi du texte reconnu. EXPR peut être une chaîne de caractères
+Analyze C<EXPR> et retourne une liste de couples composés d'un nom de
+token suivi du texte reconnu. C<EXPR> peut être une chaîne de caractères
 ou une référence à un filehandle.
 
 Exemples.
@@ -194,7 +195,7 @@ la valeur de la longueur du buffer (C<length()>).
 
 =item end EXPR
 
-Désactive la condition EXPR.
+Désactive la condition C<EXPR>.
 
 =item eoi
 
@@ -438,6 +439,11 @@ tokenizer.pl - Segmentation d'un flot de données au moyen
 de la classe C<Parse::Lex>.
 
 every.pl - Utilisation de la méthode C<every()>.
+
+sexp.pl - Interprète d'expressions arithmétiques préfixées.
+
+sexpcond.pl - Interprète d'expressions arithmétiques préfixées avec
+utilisation des conditions.
 
 =head1 BUGS
 

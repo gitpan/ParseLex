@@ -30,7 +30,7 @@ sub findName {			# Try to find the "name" of self
     } 
   } keys %{"${$pkg}::"};
   use strict qw(refs);
-  return 'no name';
+  return undef;
 }
 sub context {
   my $self = shift;
@@ -40,7 +40,7 @@ sub context {
   if (not $name) {
     $name = $self->Parse::Trace::name;
   }
-  my $sign = "[$name|$ref]";
+  my $sign = defined $name ? "[$name|$ref]" : "[$ref]";
   print $TRACE "  " x $Trace::indent, "$sign @_\n";
 }
 sub trace {	
