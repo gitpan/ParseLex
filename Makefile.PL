@@ -4,7 +4,7 @@ $Verbose = 1;
 WriteMakefile(
 	      'NAME'		=> 'Parse::Lex',
 	      'DISTNAME'        => "ParseLex",
-	      'VERSION_FROM'	=> 'Parse/Lex.pm',
+	      'VERSION_FROM'	=> 'Parse/ALex.pm',
 	      'clean'		=> {'FILES' => 'err'},
 	      'dist'            => { COMPRESS => 'gzip', SUFFIX => 'gz' },
 );

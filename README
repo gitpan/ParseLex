@@ -1,6 +1,6 @@
 	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 	      o                                       o
-	     o  Parse::Lex.pm/Parse::Token.pm - 1.17   o
+	     o  Parse::Lex.pm/Parse::Token.pm - 1.19   o
 	      o                                       o
 	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 
@@ -12,7 +12,7 @@ lexical analyzers.
 
  *************************WARNING!************************************
  * The Parse::Lex class doesn't work with a perl version inferior to *
- * 5.004. Use the Parse::Clex instead.                               *
+ * 5.004. Use the Parse::Clex class instead.                         *
  *********************************************************************
 
 Documentation is in French. It's not a linguistic provocation!  I am
@@ -40,6 +40,24 @@ HOW TO BUILD and INSTALL IT
 
 _____________________________________
 CHANGES, ESPECIALLY INCOMPATIBILITIES
+
+Modifications of the 1.18 version
+
+o Parse::Lex - Evolutions
+
+  - Documentation enhancements 
+    (thanks to Christian Schultze)
+  - Internal enhancements
+    Parse::Lex and Parse::CLex derive of the Parse::ALex Class.
+    
+
+o Parse::Token - Evolutions
+
+  - Internal enhancements
+
+Modifications of the 1.17 version
+
+  Minors enhancements
 
 Modifications of the 1.16 version
 

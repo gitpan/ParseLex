@@ -12,9 +12,10 @@ use Parse::Trace;
 use Carp;
 use vars qw($AUTOLOAD);
 
-if ((caller(0))[0] ne 'Parse::Lex') {
-  carp "The Parse::Token class must be called only via the Parse::Lex class";
+if ((caller(0))[0] ne 'Parse::ALex') {
+  carp "The Parse::Token class can be called only via the Parse::ALex class";
 }
+
 
 use vars qw($trace);
 $trace = 0;
@@ -133,17 +134,19 @@ sub do     { &{$_[1]}($_[0]) }	# why not?
 # Arguments: no argument
 
 # Returns: a token string if token is found, else undef
+
+# $Token::PENDING_TOKEN  is set by the Parse::ALex class
 sub next {			# return the token string 
   my $self = shift;
   my $reader = $self->[$READER];
-  my $pendingToken = $reader->[$Lex::PEND_TOKEN];
+  my $pendingToken = $reader->[$Token::PENDING_TOKEN];
   if ($pendingToken == $Token::EOI) {
     $self->[$STATUS] = $self == $Token::EOI ? 1 : 0;
     return undef;		
   }
   $reader->next() unless $pendingToken;
-  if ($self == $reader->[$Lex::PEND_TOKEN]) {
-    $reader->[$Lex::PEND_TOKEN] = 0; # now no pending token
+  if ($self == $reader->[$Token::PENDING_TOKEN]) {
+    $reader->[$Token::PENDING_TOKEN] = 0; # now no pending token
     my $string = $self->[$STRING];
     $self->[$STRING] = '';
     $self->[$STATUS] = 1;
@@ -162,14 +165,14 @@ sub next {			# return the token string
 sub isnext {
   my $self = shift;
   my $reader = $self->[$READER];
-  my $pendingToken = $reader->[$Lex::PEND_TOKEN];
+  my $pendingToken = $reader->[$Token::PENDING_TOKEN];
   if ($pendingToken == $Token::EOI) {
     ${$_[0]} = undef;
     return $self->[$STATUS] = $self == $Token::EOI ? 1 : 0;
   }
   $reader->next() unless $pendingToken;
-  if ($self == $reader->[$Lex::PEND_TOKEN]) {
-    $reader->[$Lex::PEND_TOKEN] = 0; # now no pending token
+  if ($self == $reader->[$Token::PENDING_TOKEN]) {
+    $reader->[$Token::PENDING_TOKEN] = 0; # now no pending token
     ${$_[0]} = $self->[$STRING];
     $self->[$STRING] = '';
     $self->[$STATUS] = 1;

@@ -6,12 +6,12 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::CLex;
-use Parse::Lex;
+use Parse::ALex;
 use Carp;
-@Parse::CLex::ISA = qw(Parse::Lex);
+@Parse::CLex::ISA = qw(Parse::ALex);
 
-my $prototype = bless [@{Parse::CLex->SUPER::prototype()}];
-sub prototype { $prototype }
+my $lexer = bless [@{Parse::CLex->SUPER::prototype()}];
+sub prototype { $lexer }
 
 my($FH, $STRING, $SUB, $BUFFER, $PENDING_TOKEN, 
    $RECORD_NO, $RECORD_LENGTH, $OFFSET, $POS,
@@ -22,18 +22,6 @@ my($FH, $STRING, $SUB, $BUFFER, $PENDING_TOKEN,
    $TOKEN_LIST
   ) = (0..30);
 
-sub pos {			
-  my $self = shift;
-  if (defined $_[0]) {    
-    carp "can't change position";
-    #my $buffer = $self->buffer;
-    #$buffer =~ s/.{$_[0]}//s;
-    #$self->buffer($buffer);
-  } else {
-    ${$self->[$POS]};
-  }
-}
-
 ####################################################################
 #Structure of the next routine:
 #  HEADER_ST | HEADER_FH
@@ -41,11 +29,10 @@ sub pos {
 #   (ROW_FOOTER|ROW_FOOTER_SUB))+
 #  FOOTER
 # hold consumed strings
-use vars qw($HOLDTOKEN $HOLDSKIP);
-$HOLDTOKEN = q!$self->[! . Parse::Lex->_map('HOLD_CONTENT') . q!] .= $content;!;
-$HOLDSKIP = q!$self->[! . Parse::Lex->_map('HOLD_CONTENT') . q!] .= $1;!; 
 
 my %CODE = ();
+$CODE{'HOLDSKIP'} = q@$self->[<<$self->_map('HOLD_CONTENT')>>] .= $1;@;
+$CODE{'HOLDTOKEN'} = q@$self->[<<$self->_map('HOLD_CONTENT')>>] .= $content;@;
 $CODE{'HEADER_ST'} = q!
   {		
    my $tokenLength = 0;
@@ -54,7 +41,7 @@ $CODE{'HEADER_ST'} = q!
        $tokenLength = length($1);
        $offset += $tokenLength;
        $pos += $tokenLength;
-       <<$HOLDSKIP>>
+       <<$self->ishold ? $self->processTemplate('HOLDSKIP') : ''>>
      }
    }
    if ($buffer eq '') {
@@ -74,7 +61,7 @@ $CODE{'HEADER_FH'} = q!
        $tokenLength = length($1);
        $offset += $tokenLength;
        $pos += $tokenLength;
-       <<$HOLDSKIP>>
+       <<$self->ishold ? $self->processTemplate('HOLDSKIP') : ''>>
      }
    }
    if ($buffer eq '') {
@@ -95,7 +82,7 @@ $CODE{'HEADER_FH'} = q!
 		$tokenLength = length($1);
 		$offset+= $tokenLength;
 		$pos = $tokenLength;
-		<<$HOLDSKIP>>
+                <<$self->ishold ? $self->processTemplate('HOLDSKIP') : ''>>
 	      } else {
 		$pos = 0; 
 		last READ;
@@ -184,13 +171,26 @@ $CODE{'ROW_FOOTER'} = q!
 !;
 $CODE{'FOOTER'} = q!
   }#CASE
-  <<$HOLDTOKEN>>
+  <<$self->ishold ? $self->processTemplate('HOLDTOKEN') : ''>>
   $self->[<<$self->_map('PENDING_TOKEN')>>] = $token;
   $token;
 }
 !;
 ####################################################################
-$prototype->[$TEMPLATE] = \%CODE;	# code template
+$lexer->[$TEMPLATE] = \%CODE;	# code template
+
+sub pos {			
+  my $self = shift;
+  if (defined $_[0]) {    
+    carp "can't change position";
+    #my $buffer = $self->buffer;
+    #$buffer =~ s/.{$_[0]}//s;
+    #$self->buffer($buffer);
+  } else {
+    ${$self->[$POS]};
+  }
+}
+
 1;
 __END__
 

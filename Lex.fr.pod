@@ -40,9 +40,9 @@ C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.18).
 
 	__END__
 	1+2-5
-	"multiline
-	string with an embedded \" in it"
-	this is an invalid string with an embedded \" in it"
+        "This is a multiline
+        string with an embedded "" in it"
+        this is an invalid string with a "" in it"
 
 =head1 DESCRIPTION
 
@@ -149,7 +149,16 @@ Exemple.
 
 	my $token = '';
 	my $sub = $lexer->getsub;
-	while (($token = &$sub($lexer)) ne $Token::EOI) {
+	while (($token = &$sub()) ne $Token::EOI) {
+	  print $token->name, "\t";
+	  print $token->getstring, "\n";
+	}
+    
+   # or 
+	
+	my $token = '';
+	local *tokenizer = $lexer->getsub;
+	while (($token = tokenizer()) ne $Token::EOI) {
 	  print $token->name, "\t";
 	  print $token->getstring, "\n";
 	}
@@ -195,8 +204,12 @@ l'ordre dans lequel elles sont passées en argument à la méthode
 C<new>.
 
 C<Parse::Lex> peut reconnaître des lexèmes disposés sur plusieurs
-enregistrements. Si le motif du début est trouvé, l'analyseur va en
-chercher la fin, et si besoin est, lire de nouveaux
+enregistrements. Si la définition du token comporte plusieurs
+expressions régulières (et est placée dans un tableau anonyme)
+C<Parse::Lex> lira autant d'enregistrement que nécessaire pour
+reconnaître le token (voir la documentation de la classe
+Parse::Token). Lorsque que le motif du début est trouvé, l'analyseur
+en cherche la fin, et si besoin est, lit de nouveaux
 enregistrements. Attention, il n'y a pas de rebroussement en cas
 d'échec.
 
@@ -254,7 +267,7 @@ de données analysé.
 =item pos
 
 C<pos EXPR> fixe la position de début du prochain token à reconnaître
-dans l'enregistrement courant. C<pos> Retourne le nombre de caractères
+dans l'enregistrement courant. C<pos> retourne le nombre de caractères
 déjà consommé dans l'enregistrement courant.
 
 =item readline

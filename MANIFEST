@@ -1,6 +1,8 @@
 Lex.fr.pod
 MANIFEST
+Makefile
 Makefile.PL
+Parse/ALex.pm
 Parse/CLex.pm
 Parse/Lex.pm
 Parse/Token-t.pm

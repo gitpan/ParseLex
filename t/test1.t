@@ -12,8 +12,8 @@ print $test->report(1, sub {
 		      my $expectation =  $test->expected;
 		      my $result =  $test->result;
 		      $expectation =~ s/\s+$//;
-#		      print STDERR "Result:\n$result\n";
-#		      print STDERR "Expectation:\n$expectation\n";
+		      print STDERR "Result:\n$result\n";
+		      print STDERR "Expectation:\n$expectation\n";
 		      $result =~ s/\s+$//;
 		      $expectation eq $result;
 		    });
@@ -39,7 +39,7 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 1.18
+Version 1.19
 Trace is ON in class Parse::Lex
 [main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]* ): 1
 [main::lexer|Parse::Lex] Token read (ADDOP, [-+] ): +
