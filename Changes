@@ -1,3 +1,11 @@
+MODIFICATIONS SINCE VERSION 2.10 - 02/09/99
+
+o Definition of Parse::Token's sub-classes 
+o Added the Parse::LexEvent class
+o Added the configure() method to Parse::ALex
+o length() can set length of the internal buffer.
+  (Thanks to Hans Jorgen Helgesen <hjhelge@uswest.net>)
+
 MODIFICATIONS SINCE VERSION 2.09 - 11/05/99
 
 o Corrected bugs in handling of mutiline tokens
@@ -7,7 +15,7 @@ MODIFICATIONS SINCE VERSION 2.08 - 08/04/99
 
 o New version of Parse::Template
 
-o Corrected bug in from() method 
+o Corrected bug in the from() method 
 
 MODIFICATIONS SINCE VERSION 2.07 - 10/02/1999
 
@@ -18,7 +26,7 @@ MODIFICATIONS SINCE VERSION 2.05 - 16/01/99
 o the from() method accepts IO::File instance.	
   (suggestion of Stefan Becker <stefan.becker@nmp.nokia.com>)
 
-o expression delimiter in a template is now '%%'
+o the expression delimiter in a template is now '%%'
 
 o Regexp are printed as it in traces
   (patch of Kenneth Olwing <K.Olwing@astea.se>)

@@ -1,8 +1,9 @@
 #!/usr/local/bin/perl
 
-BEGIN {  push(@INC, './t') }
+BEGIN {  
+  push(@INC, './t');
+}
 use W;
-
 $test = W->new('1..1');
 $test->result("examples/ctokenizer.pl");
 $test->expected(\*DATA);
@@ -37,7 +38,7 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 2.10
+Version 2.11
 Trace is ON in class Parse::CLex
 [main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 1
 [main::lexer|Parse::CLex] Token read (ADDOP, [-+]): +

@@ -1,4 +1,4 @@
- # Copyright (c) Philippe Verdret, 1995-1998
+ # Copyright (c) Philippe Verdret, 1995-1999
 
 require 5.004;
 use strict qw(vars);
@@ -6,10 +6,9 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::CLex;
-$Parse::CLex::VERSION = $Parse::ALex::VERSION;
-
 use Parse::ALex;
-@Parse::CLex::ISA = qw(Parse::ALex);
+$Parse::CLex::VERSION = $Parse::ALex::VERSION;
+@Parse::CLex::ISA = qw(Parse::Tokenizer);
 
 my $lexer = __PACKAGE__->clone;
 sub prototype { $lexer or __PACKAGE__->SUPER::prototype }
@@ -22,8 +21,6 @@ sub prototype { $lexer or __PACKAGE__->SUPER::prototype }
 
 # %%...%% are processed by the Parse::Template class
 # RegExp must be delimited by // or m!!
-# $self is the tokenizer object
-# $template is the Template object
 
 my %TEMPLATE = ();
 $TEMPLATE{'WITH_SKIP_PART'} = q@

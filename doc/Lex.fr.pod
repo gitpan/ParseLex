@@ -50,13 +50,17 @@ Les classes C<Parse::Lex> et C<Parse::CLex> permettent de créer des
 analyseurs lexicaux. Elles exploitent des techniques d'analyse
 différentes :
 
-1. C<Parse::Lex> utilise C<pos()>, associé à C<\G>,
+1. C<Parse::Lex> fait progresser l'analyse en déplaçant un pointeur
+dans les chaînes de caractères à analyser (utilisation de C<pos()>
+associé à C<\G>),
 
-2. C<Parse::CLex> utilise C<s///>, donc consomme le flot de caractères
-à analyser.
+2. C<Parse::CLex> fait progresser l'analyse en consommant
+les données reconnues (utilisation de C<s///>).
 
 Les analyseurs de la classe C<Parse::CLex> ne permettent pas
-d'utiliser des expressions régulières avec ancrage.
+d'utiliser des expressions régulières avec ancrage. De plus les
+sous-classes de C<Parse::Token> ne sont pas implémentées pour ce type
+d'analyseur.
 
 Un analyseur lexical est spécifié au moyen d'un liste de tokens passée
 en argument à la méthode C<new()>.  Les tokens sont des instances de la
@@ -189,6 +193,30 @@ Il n'est pas conseillé de changer directement le contenu du buffer
 sans changer la position du pointeur qui suit l'analyse (C<pos()>) et
 la valeur de la longueur du buffer (C<length()>).
 
+=item configure(HASH)
+
+Méthode d'instance permettant de spécifier un analyseur lexical. Cette
+méthode accepte la liste des attributs-valeurs suivants :
+
+=over 10
+
+=item From => EXPR
+
+Cet attribut joue le même rôle que la méthode C<from(EXPR)>.
+C<EXPR> peut être un filehandle ou une chaîne de caractères.
+
+=item Tokens => ARRAY_REF
+
+C<ARRAY_REF> doit contenir la liste des attributs-valeurs spécifiant
+les tokens à reconnaître (voir la documentation de C<Parse::Token>).
+
+=item Skip => REGEX
+
+Cet attribut joue le même rôle que la méthode C<skip(REGEX)>. C<REGEX>
+décrit les motifs à sauter lors de l'analyse.
+
+=over 4
+
 =item end EXPR
 
 Désactive la condition C<EXPR>.
@@ -246,6 +274,7 @@ argument retourne le filehandle s'il est défini, sinon C<undef>.
 Par défaut on suppose que les données sont lues sur C<STDIN>.
 
 Exemples.
+
 	$handle = new IO::File;
 	$handle->open("< filename");
 	$lexer->from($handle);
@@ -453,6 +482,18 @@ filehandle vers laquelle la trace va être redirigée.
 
 =back
 
+=head1 GESTION DES ERREURS
+
+Pour traiter les cas de non reconnaissance de token vous pouvez
+définir un token spécifique en fin de la liste des tokens composant
+notre analyseur lexical.  Si la recherche de ce token réussie il est
+alors possible d'appeler une fonction de traitement des erreurs :
+
+     qw(ERROR  (?s:.*)), sub {
+       print STDERR "ERROR: buffer content->", $_[0]->lexer->buffer, "<-\n";
+       die qq!can\'t analyze: "$_[1]"!;
+     }
+
 =head1 EXEMPLES
 
 ctokenizer.pl - Segmentation d'un flot de données au moyen
@@ -475,8 +516,7 @@ d'utiliser des expressions régulières avec ancrage.
 
 =head1 VOIR EGALEMENT
 
-La classe C<Parse::YYLex> qui interface C<Parse::Lex> avec le parseur
-byacc.
+C<Parse::Token>, C<Parse::LexEvent>, C<Parse::YYLex>.
 
 =head1 AUTEUR
 
@@ -486,6 +526,8 @@ Philippe Verdret
 
 La version 2.0 doit beaucoup aux suggestions de Vladimir Alexiev.
 Ocrat a largement contribué à l'amélioration de cette documentation.
+Merci également aux nombreuses personnes qui m'ont envoyé des rapports
+de bugs et parfois des corrections.
 
 =head1 REFERENCES
 

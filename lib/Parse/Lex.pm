@@ -6,10 +6,9 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::Lex;
-$Parse::Lex::VERSION = $Parse::ALex::VERSION;
-
 use Parse::ALex;
-@Parse::Lex::ISA = qw(Parse::ALex);
+$Parse::Lex::VERSION = $Parse::ALex::VERSION;
+@Parse::Lex::ISA = qw(Parse::Tokenizer);
 
 my $lexer = __PACKAGE__->clone;
 sub prototype { $lexer or __PACKAGE__->SUPER::prototype }
@@ -111,48 +110,49 @@ $lexer->template(Parse::Template->new(%TEMPLATE)); # code template
 1;
 __END__
 
+
 =head1 NAME
 
 C<Parse::Lex>  - Generator of lexical analyzers
 
 =head1 SYNOPSIS
 
-	require 5.005;
+        require 5.005;
 
-	use Parse::Lex;
-	@token = (
-	  qw(
-	     ADDOP    [-+]
-	     LEFTP    [\(]
-	     RIGHTP   [\)]
-	     INTEGER  [1-9][0-9]*
-	     NEWLINE  \n
-	     
-	    ),
-	  qw(STRING),   [qw(" (?:[^"]+|"")* ")],
-	  qw(ERROR  .*), sub {
-	    die qq!can\'t analyze: "$_[1]"!;
-	  }
-	 );
+        use Parse::Lex;
+        @token = (
+          qw(
+             ADDOP    [-+]
+             LEFTP    [\(]
+             RIGHTP   [\)]
+             INTEGER  [1-9][0-9]*
+             NEWLINE  \n
+             
+            ),
+          qw(STRING),   [qw(" (?:[^"]+|"")* ")],
+          qw(ERROR  .*), sub {
+            die qq!can\'t analyze: "$_[1]"!;
+          }
+         );
 
-	Parse::Lex->trace;  # Class method
-	$lexer = Parse::Lex->new(@token);
-	$lexer->from(\*DATA);
-	print "Tokenization of DATA:\n";
+        Parse::Lex->trace;  # Class method
+        $lexer = Parse::Lex->new(@token);
+        $lexer->from(\*DATA);
+        print "Tokenization of DATA:\n";
 
-	TOKEN:while (1) {
-	  $token = $lexer->next;
-	  if (not $lexer->eoi) {
-	    print "Line $.\t";
-	    print "Type: ", $token->name, "\t";
-	    print "Content:->", $token->text, "<-\n";
-	  } else {
-	    last TOKEN;
-	  }
-	}
+        TOKEN:while (1) {
+          $token = $lexer->next;
+          if (not $lexer->eoi) {
+            print "Line $.\t";
+            print "Type: ", $token->name, "\t";
+            print "Content:->", $token->text, "<-\n";
+          } else {
+            last TOKEN;
+          }
+        }
 
-	__END__
-	1+2-5
+        __END__
+        1+2-5
         "a multiline
         string with an embedded "" in it"
         an invalid string with a "" in it"
@@ -162,13 +162,15 @@ C<Parse::Lex>  - Generator of lexical analyzers
 The classes C<Parse::Lex> and C<Parse::CLex> create lexical analyzers.
 They use different analysis techniques:
 
-1.  C<Parse::Lex> uses C<pos()> together with C<\G>,
+1.  C<Parse::Lex> steps through the analysis by moving a pointer within
+the character strings to be analyzed (use of C<pos()> together with C<\G>),
 
-2.  C<Parse::CLex> uses C<s///> and thus consumes the stream of
-characters to be analyzed.
+2.  C<Parse::CLex> steps through the analysis by consuming the data
+recognized (use of C<s///>).
 
 Analyzers of the C<Parse::CLex> class do not allow the use of
-anchoring in regular expressions.
+anchoring in regular expressions.  In addition, the subclasses
+of C<Parse::Token> are not implemented for this type of analyzer.
 
 A lexical analyzer is specified by means of a list of tokens passed as
 arguments to the C<new()> method. Tokens are instances of the
@@ -212,8 +214,8 @@ is no longer necessarily the first rule that matches.
 A token symbol may be preceded by a start condition specifier for
 the associated recognition rule. For example:
 
-	qw(C1:TERMINAL_1  REGEXP), sub { # associated action },
-	qw(TERMINAL_2  REGEXP), sub { # associated action },
+        qw(C1:TERMINAL_1  REGEXP), sub { # associated action },
+        qw(TERMINAL_2  REGEXP), sub { # associated action },
 
 Symbol C<TERMINAL_1> will be recognized only if start condition C<C1>
 is active.  Start conditions are activated/deactivated using the
@@ -223,11 +225,11 @@ C<start('INITIAL')> resets the analysis automaton.
 
 Start conditions can be combined using AND/OR operators as follows:
 
-	C1:SYMBOL      condition C1
+        C1:SYMBOL      condition C1
 
-	C1:C2:SYMBOL   condition C1 AND condition C2
+        C1:C2:SYMBOL   condition C1 AND condition C2
 
-	C1,C2:SYMBOL   condition C1 OR  condition C2
+        C1,C2:SYMBOL   condition C1 OR  condition C2
 
 There are two types of start conditions: I<inclusive> and I<exclusive>,
 which are declared by class methods C<inclusive()> and C<exclusive()>
@@ -240,28 +242,28 @@ Example (borrowed from the documentation of Flex):
 
  use Parse::Lex;
  @token = (
-	  'EXPECT', 'expect-floats', sub {
-	    $lexer->start('expect'); 
-	    $_[1] 
-	  },
-	  'expect:FLOAT', '\d+\.\d+', sub { 
-	    print "found a float: $_[1]\n";
-	    $_[1] 
-	  },
-	  'expect:NEWLINE', '\n', sub { 
-	    $lexer->end('expect') ;
-	    $_[1] 
-	  },
-	  'NEWLINE2', '\n',
-	  'INT', '\d+', sub {
-	    print "found an integer: $_[1] \n";
-	    $_[1] 
-	  },
-	  'DOT', '\.', sub {
-	    print "found a dot\n";
-	    $_[1] 
-	  },
-	 );
+          'EXPECT', 'expect-floats', sub {
+            $lexer->start('expect'); 
+            $_[1] 
+          },
+          'expect:FLOAT', '\d+\.\d+', sub { 
+            print "found a float: $_[1]\n";
+            $_[1] 
+          },
+          'expect:NEWLINE', '\n', sub { 
+            $lexer->end('expect') ;
+            $_[1] 
+          },
+          'NEWLINE2', '\n',
+          'INT', '\d+', sub {
+            print "found an integer: $_[1] \n";
+            $_[1] 
+          },
+          'DOT', '\.', sub {
+            print "found a dot\n";
+            $_[1] 
+          },
+         );
 
  Parse::Lex->exclusive('expect');
  $lexer = Parse::Lex->new(@token);
@@ -295,6 +297,30 @@ It is not advisable to directly change the contents of the buffer
 without changing the position of the analysis pointer (C<pos()>) and the
 value length of the buffer (C<length()>).
 
+=item configure(HASH)
+
+Instance method which permits specifying a lexical analyzer.  This
+method accepts the list of the following attribute values:
+
+=over 10
+
+=item From => EXPR
+
+This attribute plays the same role as the C<from(EXPR)> method.
+C<EXPR> can be a filehandle or a character string.
+
+=item Tokens => ARRAY_REF
+
+C<ARRAY_REF> must contain the list of attribute values specifying
+the tokens to be recognized (see the documentation for C<Parse::Token>).
+
+=item Skip => REGEX
+
+This attribute plays the same role as the C<skip(REGEX)> method. C<REGEX>
+describes the patterns to skip over during the analysis.
+
+=over 4
+
 =item end EXPR
 
 Deactivates condition C<EXPR>.
@@ -309,19 +335,19 @@ Avoids having to write a reading loop in order to analyze a stream of
 data. C<SUB> is an anonymous subroutine executed after the recognition
 of each token. For example, to lex the string "1+2" you can write:
 
-	use Parse::Lex;
+        use Parse::Lex;
 
-	$lexer = Parse::Lex->new(
-	  qw(
-	     ADDOP [-+]
-	     INTEGER \d+
-	    ));
+        $lexer = Parse::Lex->new(
+          qw(
+             ADDOP [-+]
+             INTEGER \d+
+            ));
 
-	$lexer->from("1+2");
-	$lexer->every (sub { 
-	  print $_[0]->name, "\t";
-	  print $_[0]->text, "\n"; 
-	});
+        $lexer->from("1+2");
+        $lexer->every (sub { 
+          print $_[0]->name, "\t";
+          print $_[0]->text, "\n"; 
+        });
 
 The first argument of the anonymous subroutine is the C<Parse::Token>
 instance recognized.
@@ -352,12 +378,12 @@ By default it is assumed that data are read from C<STDIN>.
 
 Examples:
 
-	$handle = new IO::File;
-	$handle->open("< filename");
-	$lexer->from($handle);
+        $handle = new IO::File;
+        $handle->open("< filename");
+        $lexer->from($handle);
 
-	$lexer->from(\*DATA);
-	$lexer->from('the data to be analyzed');
+        $lexer->from(\*DATA);
+        $lexer->from('the data to be analyzed');
 
 =item getSub
 
@@ -366,21 +392,21 @@ analysis.
 
 Example:
 
-	my $token = '';
-	my $sub = $lexer->getSub;
-	while (($token = &$sub()) ne $Token::EOI) {
-	  print $token->name, "\t";
-	  print $token->text, "\n";
-	}
+        my $token = '';
+        my $sub = $lexer->getSub;
+        while (($token = &$sub()) ne $Token::EOI) {
+          print $token->name, "\t";
+          print $token->text, "\n";
+        }
     
    # or 
-	
-	my $token = '';
-	local *tokenizer = $lexer->getSub;
-	while (($token = tokenizer()) ne $Token::EOI) {
-	  print $token->name, "\t";
-	  print $token->text, "\n";
-	}
+        
+        my $token = '';
+        local *tokenizer = $lexer->getSub;
+        while (($token = tokenizer()) ne $Token::EOI) {
+          print $token->name, "\t";
+          print $token->text, "\n";
+        }
 
 =item getToken
 
@@ -430,9 +456,9 @@ instance. Returns the C<Token::EOI> instance at the end of the data.
 
 Examples:
 
-	$lexer = Parse::Lex->new(@token);
-	print $lexer->next->name;   # print the token type
-	print $lexer->next->text;   # print the token content
+        $lexer = Parse::Lex->new(@token);
+        print $lexer->next->name;   # print the token type
+        print $lexer->next->text;   # print the token content
 
 =item nextis SCALAR_REF
 
@@ -441,9 +467,9 @@ C<SCALAR_REF>. The method returns 1 as long as the token is not C<EOI>.
 
 Example:
 
-	while($lexer->nextis(\$token)) {
-	   print $token->text();
-	}
+        while($lexer->nextis(\$token)) {
+           print $token->text();
+        }
 
 =item new LIST
 
@@ -476,12 +502,12 @@ result of the reading.
 
 Example:
 
-	use Parse::Lex;
+        use Parse::Lex;
 
-	$lexer = Parse::Lex->new();
-	while (not $lexer->eoi) {
-	  print $lexer->readline() # read and print one line
-	}
+        $lexer = Parse::Lex->new();
+        while (not $lexer->eoi) {
+          print $lexer->readline() # read and print one line
+        }
 
 =item reset
 
@@ -556,6 +582,18 @@ trace will be redirected.
 
 =back
 
+=head1 ERROR HANDLING
+
+To handle the cases of token non-recognition, you can define a
+specific token at the end of the list of tokens that comprise our
+lexical analyzer.  If searching for this token succeeds, it is
+then possible to call an error handling function:
+
+     qw(ERROR  (?s:.*)), sub {
+       print STDERR "ERROR: buffer content->", $_[0]->lexer->buffer, "<-\n";
+       die qq!can\'t analyze: "$_[1]"!;
+     }
+
 =head1 EXAMPLES
 
 ctokenizer.pl - Scan a stream of data using the C<Parse::CLex> class.
@@ -575,8 +613,7 @@ expressions with anchoring.
 
 =head1 SEE ALSO
 
-The C<Parse::YYLex> class which interfaces C<Parse::Lex> with the
-byacc parser.
+C<Parse::Token>, C<Parse::LexEvent>, C<Parse::YYLex>.
 
 =head1 AUTHOR
 
@@ -587,6 +624,8 @@ Alexiev and Ocrat.
 
 Version 2.0 owes much to suggestions made by Vladimir Alexiev.
 Ocrat has significantly contributed to improving this documentation.
+Thanks also to the numerous people who have sent me bug reports and
+occasionally fixes.
 
 =head1 REFERENCES
 
@@ -602,3 +641,4 @@ FLEX - A Scanner generator (available at ftp://ftp.ee.lbl.gov/ and elsewhere)
 Copyright (c) 1995-1999 Philippe Verdret. All rights reserved.
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
+

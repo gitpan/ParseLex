@@ -1,5 +1,4 @@
 # Copyright (c)  Philippe Verdret, 1995-1999
-
 require 5.004;
 use strict qw(vars);
 use strict qw(refs);
@@ -12,14 +11,14 @@ use Parse::Trace;
 use vars qw($AUTOLOAD $trace $PENDING_TOKEN $EOI);
 $trace = 0;
 
-# other possibilities: dynamic variables, pseudo-hash, constants (see The Perl Journal Spring 99)
+# other possibilities: pseudo-hash, constants (see The Perl Journal Spring 99)
 my %_map;
 my @attributes = qw(STATUS TEXT NAME CONDITION 
-		    REGEXP SUB DECORATION LEXER EXPRESSION
+		    REGEXP SUB DECORATION LEXER HANDLER READ_MORE_RE EXPRESSION
 		    TEMPLATE TRACE IN_PKG);
 my($STATUS, $TEXT, $NAME, $CONDITION, 
-   $REGEXP, $ACTION, $DECORATION, $LEXER, $EXPRESSION,
-   $TEMPLATE, $TRACE, $IN_PKG) = @_map{@attributes} = (0..$#attributes);
+   $REGEXP, $ACTION, $DECORATION, $LEXER, $HANDLER, $READ_MORE_RE, $EXPRESSION,
+   $CODE, $TRACE, $IN_PKG) = @_map{@attributes} = (0..$#attributes);
 sub _map { 
   shift;
   if (@_) {
@@ -40,26 +39,38 @@ sub new {
   my $class = (ref $receiver or $receiver);
   my $self = bless [], $class;
 
+  my $debug = 0;
+  print STDERR "@_\n" if $debug;
+  print STDERR "@{$_[1]}\n" if $debug and ref $_[1];
+
 				# initialize...
   $self->[$STATUS] = 0;		# object status
   $self->[$TEXT] = '';		# recognized text
-
   (
    $self->[$CONDITION], 	# associated conditions		
-   $self->[$NAME]		# symbolic name
-  ) = $self->_parseName($_[0]);
-
-  $self->[$REGEXP] = $_[1];	# regexp, can be an array reference
-  $self->[$ACTION] = $_[2];	# associated sub
-  $self->[$LEXER] = $_[3];	# lexer instance
-  $self->[$EXPRESSION] = $_[4];	# for an action token
+   $self->[$NAME],		# symbolic name
+   $self->[$REGEXP],
+   $self->[$ACTION],
+   $self->[$EXPRESSION],
+   $self->[$READ_MORE_RE],
+   $self->[$HANDLER],
+   $self->[$LEXER],
+  ) = (
+       $self->_parseName($_[0]), # condition + name 
+       $_[1],			# regexp, can be an array reference
+       $_[2],			# associated sub
+       $_[3],			# expression (Token::Action)
+       $_[4],			# read more data if $_[4] =~ $LEX_BUFFER
+       $_[5],			# name of the event handler
+       $_[6],			# lexer instance
+      );
   $self->[$IN_PKG] = '';	# defined in this package
   $self->[$DECORATION] = {};	# token decoration
-  $self->[$TEMPLATE] = {};	# associated template
+  $self->[$CODE] = '';		# generated code
   $self->[$TRACE] = $trace;	# trace
   $self;
 }
-# Purpose: export a token objet to the caller package or 
+# Purpose: export a token object in the caller's package or 
 #          in the package returned by inpkg()
 # Arguments: 
 # Returns: the token object 
@@ -67,62 +78,96 @@ sub exportTo {
   my $self = shift;
   my $inpkg = $self->inpkg;
   unless (defined $inpkg) {
-    $inpkg = (caller(0))[0];
+    $inpkg = caller;		# (caller(0))[0];	
     $self->inpkg($inpkg);
   }
   my $name = $self->name;
   no strict 'refs';	
   if ($^W and defined ${"$inpkg" . "::" . "$name"}) {
-    warn "the '${inpkg}::$name' token is already defined";
+    require Carp;
+    Carp::carp "the '${inpkg}::$name' token is already defined";
   }
   ${"$inpkg" . "::" . "$name"} = $self;
   $self;
 }
 
-#sub isToken { 1 }		# use isa() instead
-
 # Purpose: create a list of token objects
 # Arguments: a list of token specification or token objects
+# Returns: list of token objects
 sub factory { 
   my $self = shift;
 
   unless (defined($_[0])) {
     require Carp;
-    Carp::croak "arguments of the factory() method must be a list of token specifications";
+    Carp::croak "argument of the factory() method must be a list of token specifications";
   }
-
   my $sub;
   my $ref;
-  my @token;
+  my @token;			# returned list of tokens 
   my $token;
-  my $next_arg;
-  my $token_class = 'Parse::Token::Simple';
-  while (@_) {
-    $next_arg = shift;
+  my $arg;
+  my $token_class = '';
+  my $debug = 0;
+  if (ref $_[0] eq 'ARRAY') {	# [Type => Segmented, Name => Xxxx, Etc.]
+    my @args = @{$_[0]};
+    my @specif = ();
+    my $next_type = '';
+    while (@args) {
+      $arg = shift @args;
+      if (ref $arg and $arg->isa(__PACKAGE__)) { 
+	push @token, $arg;
+      } elsif ($arg =~ /^[Tt]ype$/) {
+	if (@specif) {
+	  $token_class = $next_type;
+	  unless ($token_class->isa(__PACKAGE__)) {
+	    eval { require $token_class };
+	    if ($@) {
+	      require Carp;
+	      Carp::croak "$@"; # "unable to access to the $token_class class";
+	    }
+	  }
+	  print STDERR "$token_class - @specif\n" if $debug;
+	  push @token, $token_class->new(@specif);
+	  @specif = ();
+	}
+	$next_type = __PACKAGE__ . '::' . shift(@args);
+      } else {
+	push @specif, $arg;
+      }
+    }
+    if (@specif) {
+      $token_class = $next_type; # todo: load if not defined;
+      print STDERR "$token_class - @specif\n" if $debug;
+      push @token, $token_class->new(@specif);
+      @specif = ();
+    }
+  } else {
+    while (@_) {
+      $arg = shift;
 				# it's already an instance
-    if (ref $next_arg and $next_arg->isa(__PACKAGE__)) { # isa()
-      push @token, $next_arg;
-    } else {			# parse the specification
-      my($name, $regexp) = ($next_arg, shift);
-      if (@_) {
-	$ref = ref($_[0]);
-	if ($ref and $ref eq 'CODE') { # if next arg is a sub reference
-	  $sub = shift;
+      if (ref $arg and $arg->isa(__PACKAGE__)) { # isa()
+	push @token, $arg;
+      } else {			# parse the specification
+	my($name, $regexp) = ($arg, shift);
+	if (@_) {
+	  $ref = ref($_[0]);
+	  if ($ref and $ref eq 'CODE') { # if next arg is a sub reference
+	    $sub = shift;
+	  } else {
+	    $sub = undef;
+	  }
 	} else {
 	  $sub = undef;
 	}
-      } else {
-	$sub = undef;
+	unless (ref($regexp) eq 'ARRAY') {
+	  $token_class = __PACKAGE__ . '::Simple';
+	} else {
+	  $token_class = __PACKAGE__ . '::Segmented';
+	}
+	push @token, $token_class->new(Name => $name, Regex => $regexp, Sub => $sub);
       }
-      unless (ref($regexp) eq 'ARRAY') {
-	$token_class = 'Parse::Token::Simple';
-      } else {
-	$token_class = 'Parse::Token::Multiline';
-      }
-      push @token, $token_class->new($name, $regexp, $sub);
     }
   }
-  #print STDERR "@token\n";
   @token;
 }
 sub _parseName {
@@ -134,23 +179,22 @@ sub _parseName {
   }
   ($condition, $name);
 }
-# Put or fetch a template object
-sub template {
+sub code {
   my $self = shift;
   if (defined $_[0]) {
-    $self->[$TEMPLATE] = $_[0];
+    $self->[$CODE] = $_[0];
   } else {
-    $self->[$TEMPLATE];
+    $self->[$CODE];
   }
 }
-sub getTemplate {
+sub getCode {
   my $self = shift;
   my $part = shift;
-  $self->[$TEMPLATE];
+  $self->[$CODE];
 }
-sub setTemplate {
+sub setCode {
   my $self = shift;
-  $self->[$TEMPLATE] = shift;
+  $self->[$CODE] = shift;
 }
 sub condition {
   my $self = shift;
@@ -168,7 +212,15 @@ sub expression {
     $self->[$EXPRESSION];
   }
 }
-sub AUTOLOAD {		    
+sub readmore {
+  my $self = shift;
+  if (@_) {
+    $self->[$READ_MORE_RE] = shift;
+  } else {
+    $self->[$READ_MORE_RE];
+  }
+}
+sub AUTOLOAD {			# is this useful or dangerous? ;-)
   my $self = shift;
   return unless ref($self);
   return if $AUTOLOAD =~ /\bDESTROY$/;
@@ -224,24 +276,18 @@ sub text {
       $_[0]->[$TEXT];
 } 
 
-#  name()
-# Purpose:
-# Arguments:
-# Returns:
 sub name { $_[0]->[$NAME] }	# name of the token
 *type = \&name;			# synonym of the name() method
 
-#  
-# Purpose:
-# Arguments:
-# Returns:
 sub regexp { $_[0]->[$REGEXP] }	# regexp
+
+sub handler { $_[0]->[$HANDLER] } # name of an event handler
 
 # action()
 # Purpose:
 # Arguments:
 # Returns:
-sub action   { $_[0]->[$ACTION] } # anonymous function
+sub action { $_[0]->[$ACTION] } # anonymous function
 
 # lexer(EXP)
 # lexer
@@ -255,6 +301,18 @@ sub lexer {
     $_[0]->[$LEXER];
   }
 }	
+
+sub getRegisteredLexerType {
+  my $self = shift;
+  my $type = shift;
+  my $class = ref $self;
+  no strict 'refs';
+  foreach (@{"${class}::REGISTERED_LEXER_TYPE"}) {
+    return $_ if $type->isa("Parse::$_");
+  }
+  require Carp;
+  Carp::croak "No template defined for the '$type' lexer";
+}
 # not documented
 sub do { 
   my $self = shift;
@@ -314,7 +372,7 @@ sub isnext {
   }
 }
 
-package Parse::Token::Action;	# experimental feature - not documented
+package Parse::Token::Action;	
 use Parse::Template;
 @Parse::Token::Action::ISA = qw(Parse::Token Parse::Trace);
 
@@ -329,8 +387,7 @@ $template = new Parse::Template(%TEMPLATE);
 sub new {
   my $receiver = shift;
   my ($name, $expression) = $receiver->_parse(@_);
-  my $token = $receiver->SUPER::new($name, '', '', '', $expression);
-  $token->template($template);	
+  my $token = $receiver->SUPER::new($name, '', '', $expression);
   $token;
 }
 sub _parse {
@@ -344,12 +401,13 @@ sub _parse {
   my $escape = '';
   while (@_ >= 2) {
     ($key, $value) = (shift, shift);
-    if ($key =~ /-?[Nn]ame/) {
+    if ($key =~ /^[Nn]ame$/) {
       $name = $value;
-    } elsif ($key =~ /^-?[Ee]xpr$/) {
+    } elsif ($key =~ /^[Ee]xpr$/) {
       $expression = $value;
     } else {
-      last;
+      require  Carp;
+      Carp::croak "'$key' is an invalid attribute for a ", __PACKAGE__, "'s instance";
     }
   }
   ($name, $expression);
@@ -359,7 +417,6 @@ sub genCode {
 
   my $lexer = $self->lexer;
   my $tokenid = $lexer->inpkg() . '::' . $self->name();
-  my $template = $self->template;
   my $condition = $lexer->genCondition($self->condition);
   my $expression = $self->expression;
 
@@ -367,33 +424,90 @@ sub genCode {
 		 CONDITION => $condition,
 		 EXPRESSION => $expression,
 		); 
-  my $code;
-  eval {
-    $code = $template->eval('EXPRESSION_PART');
-  };
-  if ($@) {
-    require Carp;
-    Carp::croak "$@";
-  }
+  my $code = $template->eval('EXPRESSION_PART');
+  $self->code($code);
   $code;
 }
+
 package Parse::Token::Simple;
 use Parse::Trace;
 use Parse::Template;
 @Parse::Token::Simple::ISA = qw(Parse::Token Parse::Trace);
 
-use vars qw(%TEMPLATE $template);
+sub new {
+  my $receiver = shift;
+  my $token = $receiver->SUPER::new($receiver->_parse(@_));
+  $token;
+}
+sub _parse {
+  my $self = shift;
+  unless (@_ >= 2) {
+    require  Carp;
+    Carp::croak "bad argument number (@_)";
+  }
+  my ($name, $regex, $action, $expression, $readif, $handler) =
+    ('', '', '', '', '', '');
+  my ($key, $value, $escape);
+  while (@_ >= 2) {
+    ($key, $value) = (shift, shift);
+    if ($key =~ /^[Nn]ame$/) {
+      $name = $value;
+    } elsif ($key =~ /^(?:[Rr]egexp?|[Rr]e)$/) {
+      $regex = $value;
+    #} elsif ($key =~ /^[Rr]ead[Ii]f$/) { # regexp for continuation
+    } elsif ($key =~ /^[Rr]eadMore$/) { # regexp for continuation
+      $readif = $value == 1 ? "\$" : '';
+    } elsif ($key =~ /^[Ss]ub$/) {
+      $action = $value;
+    } elsif ($key =~ /^[Hh]andler$/) {
+      $handler = $value;
+    } else {
+      require  Carp;
+      Carp::croak "'$key' is an invalid attribute for a ", __PACKAGE__, "'s instance";
+    }
+  }
+  ($name, $regex, $action, $expression, $readif, $handler);
+}
+
+use vars qw(%TEMPLATE @REGISTERED_LEXER_TYPE $template);
+@REGISTERED_LEXER_TYPE = qw(Lex CLex LexEvent);
 %TEMPLATE = ();
-				# for the Lex class
+####################################### Parse::Token::Simple - Parse::Lex class
 $TEMPLATE{'LEX_HEADER_PART'} = q!
    %%$CONDITION%%
    $LEX_BUFFER =~ /\G(?:%%$REGEXP%%)/cg and do {
+     %%$READ_MORE_RE ne '' ? LEX_READ_MORE_DATA_PART() : LEX_SET_TOKEN_PART()%%
+     %%$WITH_TRACE ? LEX_TRACE_PART() : '' %%
+     %%$WITH_SUB ? LEX_FOOTER_WITH_SUB_PART() : LEX_FOOTER_PART() %%
+!;
+$TEMPLATE{'LEX_READ_MORE_DATA_PART'} = q!
+  my $pos = pos($LEX_BUFFER);
+  my $line;
+  $textLength = $pos - $LEX_POS;
+  $pos = pos($LEX_BUFFER);
+  while ($LEX_BUFFER =~ /\G(?:%%$READ_MORE_RE%%)/cg) {
+     $line = <$LEX_FH>;	
+     if (defined $line) {
+       $LEX_BUFFER .= $line;
+       pos($LEX_BUFFER) = $pos;
+       if ($LEX_BUFFER =~ /\G(?:%%$REGEXP%%)/cg) {
+	 $pos = pos($LEX_BUFFER);
+       } else {
+	 last;
+       }
+     }
+  }
+  $textLength = pos($LEX_BUFFER) - $LEX_POS;
+  $content = substr($LEX_BUFFER, $LEX_POS, $textLength); # $&
+  $LEX_LENGTH = CORE::length($LEX_BUFFER); 
+  $LEX_OFFSET += $textLength;
+  $LEX_POS += $textLength;
+!;
+$TEMPLATE{'LEX_SET_TOKEN_PART'} = q!
      $textLength = pos($LEX_BUFFER) - $LEX_POS;
      $content = substr($LEX_BUFFER, $LEX_POS, $textLength); # $&
      $LEX_OFFSET += $textLength;
      $LEX_POS += $textLength;
-     %%$WITH_TRACE ? LEX_TRACE_PART() : '' %%
-     %%$WITH_SUB ? LEX_FOOTER_WITH_SUB_PART() : LEX_FOOTER_PART() %%
 !;
 $TEMPLATE{'LEX_TRACE_PART'} = q!
      if ($self->[%%$TRACE%%]) {
@@ -406,8 +520,8 @@ $TEMPLATE{'LEX_FOOTER_WITH_SUB_PART'} = q!
     $%%$TOKEN_ID%%->setText($content);
     $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%$TOKEN_ID%%;
     $content = &{$%%$TOKEN_ID%%->action}($LEX_TOKEN, $content);
-    $%%$TOKEN_ID%%->setText($content);
-    $LEX_TOKEN = $self->[%%$PENDING_TOKEN%%]; # if tokenis in sub
+    ($LEX_TOKEN = $self->getToken)->setText($content);
+print STDERR $LEX_TOKEN->name, " ", $self->[%%$PENDING_TOKEN%%]->name, " $content\n";
     %%$WITH_TRACE ? LEX_FOOTER_WITH_SUB_TRACE_PART() : ''%%
     last CASE;
   };
@@ -427,7 +541,53 @@ $TEMPLATE{'LEX_FOOTER_PART'} = q!
     last CASE;
    };
 !;
-				# For the CLex class
+####################################### Parse::Token::Simple - Parse::LexEvent class
+$TEMPLATE{'LEXEVENT_HEADER_PART'} = q!
+   %%$CONDITION%%
+   $LEX_BUFFER =~ /\G(?:%%$REGEXP%%)/cg and do {
+     %%$READ_MORE_RE ne '' ? LEX_READ_MORE_DATA_PART() : LEXEVENT_SET_TOKEN_PART()%%
+     %%$WITH_TRACE ? LEXEVENT_TRACE_PART() : '' %%
+     %%$TOKEN_HANDLER%%($%%$TOKEN_ID%%, $content);
+    redo PARSE;
+  };
+!;
+$TEMPLATE{'LEX_READ_MORE_DATA_PART'} = q!
+  my $pos = pos($LEX_BUFFER);
+  my $line;
+  $textLength = $pos - $LEX_POS;
+  $pos = pos($LEX_BUFFER);
+  while ($LEX_BUFFER =~ /\G(?:%%$READ_MORE_RE%%)/cg) {
+     $line = <$LEX_FH>;	
+     if (defined $line) {
+         $LEX_BUFFER .= $line;
+         pos($LEX_BUFFER) = $pos;
+	 if ($LEX_BUFFER =~ /\G(?:%%$REGEXP%%)/cg) {
+	   $pos = pos($LEX_BUFFER);
+	 } else {
+	   last;
+	 }
+     }
+  }
+  $textLength = pos($LEX_BUFFER) - $LEX_POS;
+  $content = substr($LEX_BUFFER, $LEX_POS, $textLength); # $&
+  $LEX_LENGTH = CORE::length($LEX_BUFFER); 
+  $LEX_OFFSET += $textLength;
+  $LEX_POS += $textLength;
+!;
+$TEMPLATE{'LEXEVENT_SET_TOKEN_PART'} = q!
+     $textLength = pos($LEX_BUFFER) - $LEX_POS;
+     $content = substr($LEX_BUFFER, $LEX_POS, $textLength); # $&
+     $LEX_OFFSET += $textLength;
+     $LEX_POS += $textLength;
+!;
+$TEMPLATE{'LEXEVENT_TRACE_PART'} = q!
+     if ($self->[%%$TRACE%%]) {
+       my $tmp = '%%$REGEXP%%';
+       my $trace = "Token read (" . $%%$TOKEN_ID%%->name . ", $tmp): $content"; 
+       $self->context($trace);
+     }
+!;
+####################################### Parse::Token::Simple - Parse::CLex class
 $TEMPLATE{'CLEX_HEADER_PART'} = q!
    %%$CONDITION%%
    $LEX_BUFFER =~ s/^(?:%%$REGEXP%%)// and do {
@@ -448,8 +608,7 @@ $TEMPLATE{'CLEX_TRACE_PART'} = q!
 
 $TEMPLATE{'CLEX_FOOTER_WITH_SUB_PART'} = q!
      $%%$TOKEN_ID%%->setText($content);
-     $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN 
-       = $%%$TOKEN_ID%%;
+     $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%$TOKEN_ID%%;
      $content = &{$%%$TOKEN_ID%%->action}($LEX_TOKEN, $content);
      ($LEX_TOKEN = $self->getToken)->setText($content);
      %%$WITH_TRACE ? CLEX_FOOTER_WITH_SUB_TRACE_PART() : ''%%
@@ -471,34 +630,29 @@ $TEMPLATE{'CLEX_FOOTER_PART'} = q!
      last CASE;
    };
 !;
-#########################################################################################################
 $template = new Parse::Template(%TEMPLATE);
-sub new {
-  my $receiver = shift;
-  my $token = $receiver->SUPER::new(@_);
-  $token->template($template);	
-  $token;
-}
-
 sub genCode {
   my $self = shift;
 
   my $lexer = $self->lexer;
-  my $tokenid = $lexer->inpkg() . '::' . $self->name();
-  my $template = $self->template;
-  my $condition = $lexer->genCondition($self->condition);
-  my $with_sub = defined $self->action ? 1 : 0;
+  my($TRACE, $EOI, $HOLD_TEXT,  $PENDING_TOKEN) =
+    $lexer->_map('TRACE', 'EOI', 'HOLD_TEXT', 'PENDING_TOKEN');
 
-  my($SKIP, $HOLD, $TRACE, $EOI, $HOLD_TEXT,  $PENDING_TOKEN) =
-    $lexer->_map('SKIP', 'HOLD', 'TRACE', 'EOI', 'HOLD_TEXT', 'PENDING_TOKEN');
+  my $tokenid = $lexer->inpkg() . '::' . $self->name();
+  my $condition = $lexer->genCondition($self->condition);
+  my $with_sub = $self->action ? 1 : 0;
+  my $readmore =   $lexer->isFromString ? '' : $self->readmore;
+  my $handler = $self->handler || $tokenid;
+  $handler = $handler =~ /::/ ? $handler : $lexer->inpkg . '::' . $handler;
 
   $template->env(
-		 #'template' => \$template,
-		 'CONDITION' => $condition,
-		 'TOKEN_ID'=> $tokenid,
-		 'SKIP' => $lexer->[$SKIP],
-		 'IS_HOLD' => $lexer->[$HOLD],
-		 'WITH_TRACE' => $lexer->[$TRACE],
+		 CONDITION => $condition,
+		 TOKEN_ID=> $tokenid,
+		 TOKEN_HANDLER => $handler,
+		 SKIP => $lexer->skip,
+		 'IS_HOLD' => $lexer->isHold,
+		 'WITH_TRACE' => $lexer->isTrace,
+		 READ_MORE_RE => $readmore,
 		 'WITH_SUB' => $with_sub,
 		 'HOLD_TEXT' => $HOLD_TEXT,
 		 'EOI' => $EOI,
@@ -511,27 +665,56 @@ sub genCode {
   if ($debug) {
     print STDERR "REGEXP[$tokenid]->\t\t$ppregexp\n";
   }
-  $template->env('REGEXP', $ppregexp);
-  my $code;
-  my $lexer_type = $lexer->lexerType;
-  $lexer_type =~ s/.+::(.+)$/\U$1_/g;
-  eval {
-    $code = $template->eval($lexer_type . 'HEADER_PART');
-  };
-  if ($@) {
-    require Carp;
-    Carp::croak "$@";
-  }
+  $template->env('REGEXP' => $ppregexp);
+  my $lexer_type = ref $lexer;
+  # find the template code defined for this lexer type
+  $lexer_type = $self->getRegisteredLexerType($lexer_type);
+  my $code = $template->eval("\U$lexer_type" . '_HEADER_PART');
+  $self->code($code);
   $code;
 }
 
-package Parse::Token::Multiline; # Parse::Token::Complex ???
+package Parse::Token::Segmented; 
 use Parse::Trace;
-@Parse::Token::Multiline::ISA = qw(Parse::Token Parse::Trace);
+@Parse::Token::Segmented::ISA = qw(Parse::Token Parse::Trace);
+sub new {
+  my $receiver = shift;
+  #my ($name, $regex, $action) = $receiver->_parse(@_);
+  my $token = $receiver->SUPER::new($receiver->_parse(@_));
+  $token;
+}
+sub _parse {
+  my $self = shift;
+  unless (@_ >= 2) {
+    require  Carp;
+    Carp::croak "bad argument number (@_)";
+  }
+  #print STDERR "@_\n";
+  my ($name, $regex, $action, $expression, $readif, $handler) = 
+    ('', '', '', '', '', '');
+  my ($key, $value, $escape) = ('', '', '');
+  while (@_ >= 2) {
+    ($key, $value) = (shift, shift);
+    if ($key =~ /^[Nn]ame$/) {
+      $name = $value;
+    } elsif ($key =~ /^(?:[Rr]egexp?|[Rr]e)$/) {
+      $regex = $value;
+    } elsif ($key =~ /^[Ss]ub$/) {
+      $action = $value;
+    } elsif ($key =~ /^[Hh]andler$/) {
+      $handler = $value;
+    } else {
+      require  Carp;
+      Carp::croak "'$key' is an invalid attribute for a ", __PACKAGE__, "'s instance";
+    }
+  }
+  ($name, $regex, $action, $expression, $readif, $handler);
+}
 
-use vars qw(%TEMPLATE $template);
+use vars qw(%TEMPLATE @REGISTERED_LEXER_TYPE);
+@REGISTERED_LEXER_TYPE = qw(Lex CLex LexEvent);
 %TEMPLATE = ();
-				# For the Lex class
+####################################### Parse::Token::Segmented - Parse::Lex class
 $TEMPLATE{'LEX_HEADER_PART'} = q!
   %%$FROM_STRING ? LEX_HEADER_STRING_PART() : LEX_HEADER_STREAM_PART() %%
 !;
@@ -544,7 +727,6 @@ $TEMPLATE{'LEX_HEADER_STRING_PART'} = q!
      $LEX_OFFSET += $textLength;
      $LEX_POS += $textLength;
      %%$WITH_TRACE ? LEX_TOKEN_TRACE_PART() : '' %%
-     %%$FROM_STRING ? LEX_TOKEN_STRING_PART() : LEX_TOKEN_STREAM_PART() %%
      %%$WITH_SUB ? LEX_FOOTER_WITH_SUB_PART() : LEX_FOOTER_PART() %%
 !;
 $TEMPLATE{'LEX_HEADER_STREAM_PART'} = q@
@@ -566,7 +748,7 @@ $TEMPLATE{'LEX_HEADER_STREAM_PART'} = q@
 	      $self->[%%$EOI%%] = 1;
 	      $LEX_TOKEN = $Parse::Token::EOI;
 	      require Carp;
-	      Carp::croak "unable to find end of token ", $%%$TOKEN_ID%%->name, "";
+	      Carp::croak "unable to find end of the '", $%%$TOKEN_ID%%->name, "' token";
 	    }
 	    $LEX_RECORD++;
 	    $tmp .= $line;
@@ -598,8 +780,7 @@ $TEMPLATE{'LEX_FOOTER_WITH_SUB_PART'} = q!
     $%%$TOKEN_ID%%->setText($content);
     $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%$TOKEN_ID%%;
     $content = &{$%%$TOKEN_ID%%->action}($LEX_TOKEN, $content);
-    $%%$TOKEN_ID%%->setText($content);
-    $LEX_TOKEN = $self->[%%$PENDING_TOKEN%%]; # if tokenis in sub
+    ($LEX_TOKEN = $self->getToken)->setText($content);
      %%$WITH_TRACE ? LEX_FOOTER_WITH_SUB_TRACE_PART() : ''%%
     last CASE;
   };
@@ -619,8 +800,73 @@ $TEMPLATE{'LEX_FOOTER_PART'} = q!
     last CASE;
    };
 !;
+####################################### Parse::Token::Segmented - Parse::LexEvent class
+$TEMPLATE{'LEXEVENT_HEADER_PART'} = q!
+  %%$FROM_STRING ? LEXEVENT_HEADER_STRING_PART() : LEXEVENT_HEADER_STREAM_PART() %%
+!;
 
-				# For the CLex class
+$TEMPLATE{'LEXEVENT_HEADER_STRING_PART'} = q!
+   %%$CONDITION%%
+   $LEX_BUFFER =~ /\G(?:%%$REGEXP%%)/cg and do {
+     $textLength = pos($LEX_BUFFER) - $LEX_POS;
+     $content = substr($LEX_BUFFER, $LEX_POS, $textLength); # $&
+     $LEX_OFFSET += $textLength;
+     $LEX_POS += $textLength;
+     %%$WITH_TRACE ? LEXEVENT_TRACE_PART() : '' %%
+     %%$TOKEN_HANDLER%%($%%$TOKEN_ID%%, $content);
+    redo PARSE;
+  };
+!;
+$TEMPLATE{'LEXEVENT_HEADER_STREAM_PART'} = q@
+    %%$CONDITION%%
+    $LEX_BUFFER =~ /\G(?:%%"$REGEXP_START"%%)/cg and do {
+      my $before_pos = $LEX_POS;
+      my $start_pos = pos($LEX_BUFFER);
+      my $tmp = substr($LEX_BUFFER, $start_pos); 
+      my $line_read = 0;
+      # don't use \G 
+      #print STDERR "before: $LEX_POS - initpos: $start_pos - tmp: $tmp\n";
+      unless ($tmp =~ /^(?:%%"$REGEXP_MIDDLE$REGEXP_END"%%)/g) {
+	my $line = '';
+	do {
+	  while (1) {
+	    $line = <$LEX_FH>;
+	    $line_read = 1;
+	    unless (defined($line)) { # 
+	      $self->[%%$EOI%%] = 1;
+	      $LEX_TOKEN = $Parse::Token::EOI;
+	      require Carp;
+	      Carp::croak "unable to find end of the '", $%%$TOKEN_ID%%->name, "' token";
+	    }
+	    $LEX_RECORD++;
+	    $tmp .= $line;
+	    last if $line =~ /%%$REGEXP_END%%/;
+	  }
+	} until ($tmp =~ /^(?:%%"$REGEXP_MIDDLE$REGEXP_END"%%)/g); # don't forget /g
+      }
+      $LEX_POS = $start_pos + pos($tmp);
+      $LEX_OFFSET += $LEX_POS;
+      if ($line_read) {
+         $LEX_BUFFER = substr($LEX_BUFFER, 0, $start_pos) . $tmp;
+         $LEX_LENGTH = CORE::length($LEX_BUFFER); 
+      } 
+      $content = substr($LEX_BUFFER, $before_pos, $LEX_POS - $before_pos);
+      pos($LEX_BUFFER) = $LEX_POS;
+      #print STDERR "LEX_BUFFER: $LEX_BUFFER\n";
+      #print STDERR "pos: $before_pos - length: ", $LEX_POS -$before_pos, " - content->$content<-\n";
+      %%$WITH_TRACE ? LEXEVENT_TRACE_PART() : '' %%
+      %%$TOKEN_HANDLER%%($%%$TOKEN_ID%%, $content);
+     redo PARSE;
+   };
+@;
+$TEMPLATE{'LEXEVENT_TRACE_PART'} = q!
+     if ($self->[%%$TRACE%%]) {
+       my $tmp = '%%$REGEXP%%';
+       my $trace = "Token read (" . $%%$TOKEN_ID%%->name . ", $tmp): $content"; 
+       $self->context($trace);
+     }
+!;
+####################################### Parse::Token::Segmented - Parse::CLex class
 $TEMPLATE{'CLEX_HEADER_PART'} = q!
   %%$FROM_STRING ? CLEX_HEADER_STRING_PART() : CLEX_HEADER_STREAM_PART() %%
 !;
@@ -632,7 +878,6 @@ $TEMPLATE{'CLEX_HEADER_STRING_PART'} = q!
      $LEX_OFFSET += $textLength;
      $LEX_POS += $textLength;
      %%$WITH_TRACE ? CLEX_TOKEN_TRACE_PART() : '' %%
-     %%$FROM_STRING ? CLEX_TOKEN_STRING_PART() : CLEX_TOKEN_STREAM_PART() %%
      %%$WITH_SUB ? CLEX_FOOTER_WITH_SUB_PART() : CLEX_FOOTER_PART() %%
 !;
 $TEMPLATE{'CLEX_HEADER_STREAM_PART'} = q!
@@ -648,7 +893,7 @@ $TEMPLATE{'CLEX_HEADER_STREAM_PART'} = q!
            $self->[%%$EOI%%] = 1;
            $LEX_TOKEN = $Parse::Token::EOI;
 	   require Carp;
-	   Carp::croak "unable to find end of token ", $%%$TOKEN_ID%%->name, "";
+	   Carp::croak "unable to find end of the '", $%%$TOKEN_ID%%->name, "' token";
 	 }
 	 $length = CORE::length($string);
 	 $LEX_RECORD++;
@@ -661,7 +906,7 @@ $TEMPLATE{'CLEX_HEADER_STREAM_PART'} = q!
      $LEX_OFFSET += $textLength;
      $LEX_POS += $length - CORE::length($LEX_BUFFER);	
      %%$WITH_TRACE ? CLEX_TOKEN_TRACE_PART() : '' %%
-     %%$WITH_SUB ? LEX_FOOTER_WITH_SUB_PART() : LEX_FOOTER_PART() %%
+     %%$WITH_SUB ? CLEX_FOOTER_WITH_SUB_PART() : CLEX_FOOTER_PART() %%
 !;
 $TEMPLATE{'CLEX_TOKEN_TRACE_PART'} = q!
      if ($self->[%%$TRACE%%]) { # Trace
@@ -672,8 +917,7 @@ $TEMPLATE{'CLEX_TOKEN_TRACE_PART'} = q!
 !;
 $TEMPLATE{'CLEX_FOOTER_WITH_SUB_PART'} = q!
      $%%$TOKEN_ID%%->setText($content);
-     $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN 
-       = $%%$TOKEN_ID%%;
+     $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%$TOKEN_ID%%;
      $content = &{$%%$TOKEN_ID%%->action}($LEX_TOKEN, $content);
      ($LEX_TOKEN = $self->getToken)->setText($content);
      %%$WITH_TRACE ? CLEX_FOOTER_WITH_SUB_TRACE_PART() : ''%%
@@ -695,36 +939,29 @@ $TEMPLATE{'CLEX_FOOTER_PART'} = q!
      last CASE;
    };
 !;
-
-#########################################################################################################
-$template = new Parse::Template(%TEMPLATE);
-sub new {
-  my $receiver = shift;
-  my $token = $receiver->SUPER::new(@_);
-  $token->template($template);	
-  $token;
-}
-
+my $template = new Parse::Template(%TEMPLATE);
 sub genCode {
   my $self = shift;
+  my $debug = 0;
 
   my $lexer = $self->lexer;
   my $tokenid = $lexer->inpkg() . '::' . $self->name();
-  my $template = $self->template;
   my $condition = $lexer->genCondition($self->condition);
-  
-  my($FROM_STRING, $SKIP, $HOLD, $TRACE, $EOI, $HOLD_TEXT,  $PENDING_TOKEN) =
-    $lexer->_map('FROM_STRING', 'SKIP', 'HOLD', 'TRACE', 'EOI', 'HOLD_TEXT', 'PENDING_TOKEN');
+  my $handler = $self->handler || $tokenid;
+  $handler = $handler =~ /::/ ? $handler : $lexer->inpkg . '::' . $handler;
 
-  my $with_sub = defined $self->action ? 1 : 0;
+  my($TRACE, $EOI, $HOLD_TEXT,  $PENDING_TOKEN) =
+    $lexer->_map('TRACE', 'EOI', 'HOLD_TEXT', 'PENDING_TOKEN');
+
+  my $with_sub = $self->action ? 1 : 0;
   $template->env(
-		 #'template' => \$template,
-		 'CONDITION', $condition,
-		 'TOKEN_ID', $tokenid,
-		 'SKIP' => $lexer->[$SKIP],
-		 'FROM_STRING' => $lexer->[$FROM_STRING],
-		 'IS_HOLD' => $lexer->[$HOLD],
-		 'WITH_TRACE' => $lexer->[$TRACE],
+		 'CONDITION' => $condition,
+		 'TOKEN_ID' => $tokenid,
+		 TOKEN_HANDLER => $handler,
+		 'SKIP' => $lexer->skip,
+		 'FROM_STRING' => $lexer->isFromString,
+		 'IS_HOLD' => $lexer->isHold,
+		 'WITH_TRACE' => $lexer->isTrace,
 		 'WITH_SUB' => $with_sub,
 		 'HOLD_TEXT' => $HOLD_TEXT,
 		 'EOI' => $EOI,
@@ -735,44 +972,45 @@ sub genCode {
   my $ppregexp;
   my $tmpregexp;
   my $regexp = $self->regexp;
+  print STDERR "REGEXP[$tokenid]->\t\t@{$self->[$REGEXP]}\n" if $debug;
+
   if ($#{$regexp} >= 3) {
     require Carp;
     Carp::carp join  " " , "Warning!", $#{$regexp} + 1, 
     "arguments in token definition";
   }
   $ppregexp = $tmpregexp = $template->ppregexp(${$regexp}[0]);
-  $template->env('REGEXP_START', $ppregexp);
+  $template->env('REGEXP_START' => $ppregexp);
 
   $ppregexp = ${$regexp}[1] ? $template->ppregexp(${$regexp}[1]) : '(?:.*?)';
   $tmpregexp .= $ppregexp;
-  $template->env('REGEXP_MIDDLE', $ppregexp);
+  $template->env('REGEXP_MIDDLE' => $ppregexp);
 
   $ppregexp = $template->ppregexp(${$regexp}[2] or ${$regexp}[0]);
-  $template->env('REGEXP_END', $ppregexp);
+  $template->env('REGEXP_END' => $ppregexp);
   $ppregexp = "$tmpregexp$ppregexp";
-  my $debug = 0;
+
   if ($debug) {
     print STDERR "REGEXP[$tokenid]->\t\t$ppregexp\n";
   }
-  $template->env('REGEXP', $ppregexp);
+  $template->env('REGEXP' => $ppregexp);
 
-  my $code;
-  my $lexer_type = $lexer->lexerType;
-  $lexer_type =~ s/.+::(.+)$/\U$1_/g;
-  $code = $template->eval($lexer_type . 'HEADER_PART');
+  my $lexer_type = ref $lexer;	
+  # find the template code defined for this lexer type
+  $lexer_type = $self->getRegisteredLexerType($lexer_type);
+  my $code = $template->eval("\U$lexer_type" . '_HEADER_PART');
+  $self->code($code);
   $code;
 }
 
-package Parse::Token::Quoted;
+package Parse::Token::Delimited;
 use Parse::Trace;
-@Parse::Token::Quoted::ISA = qw(Parse::Token::Multiline Parse::Trace);
+@Parse::Token::Delimited::ISA = qw(Parse::Token::Segmented Parse::Trace);
 
-sub new {
-  my $receiver = shift;
-  my ($name, $regexp, @remain) = $receiver->_parse(@_);
-  my $token = $receiver->SUPER::new($name, $regexp, @remain);
-  $token;
-}
+# Examples:
+# [qw(/[*] (?s:.*?) [*]/)]
+# [qw(<!-- (?s:.*?) -->)]
+# [qw(<[?] (?s:.*?) [?]>)]
 
 sub _parse {
   my $self = shift;
@@ -780,28 +1018,85 @@ sub _parse {
     require  Carp;
     Carp::croak "bad argument number (@_)";
   }
-  my ($key, $value);
-  my ($name, $start, $end, $regexp, $action);
-  my $escape = '';
-  while (@_ >= 2) {
+  #print STDERR "@_\n";
+  my ($name, $regex, $action, $expression, $readif, $handler) = 
+    ('', '', '', '', '', '');
+  my ($key, $value, $start, $end, $escape) = ('', '');
+  while (@_ >= 2) {	
     ($key, $value) = (shift, shift);
-    if ($key =~ /-?[Nn]ame/) {
+    if ($key =~ /^[Nn]ame$/) {
       $name = $value;
-    } elsif ($key =~ /^-?[Qq]uote$/) {
-      $start = $value unless defined $start;
-      $end = $value unless defined $end;
-    } elsif ($key =~ /^-?[Ss]tart$/) {
+    } elsif ($key =~ /^[Ss]tart$/) {
       $start = $value;
       $end = $value unless defined $end;
-    } elsif ($key =~ /^-?[Ee]nd$/) {
+    } elsif ($key =~ /^[Ee]nd$/) {
       $end = $value;
       $start = $value unless defined $start;
-    } elsif ($key =~ /^-?[Ee]scape$/) {
-      $escape = $value;
-    } elsif ($key =~ /^-?[Aa]ction$/) {
+    } elsif ($key =~ /^[Ss]ub$/) {
       $action = $value;
+    } elsif ($key =~ /^[Hh]andler$/) {
+      $handler = $value;
     } else {
-      last;
+      require  Carp;
+      Carp::croak "'$key' is an invalid attribute for a ", __PACKAGE__, "'s instance";
+    }
+  }
+  unless (defined $start) {
+    require Carp;
+    Carp::croak "'Start' regex not defined";
+  }
+  unless (defined $end) {
+    require Carp;
+    Carp::croak "'End' regex not defined";
+  }
+  $regex = $self->_buildRegexp($start, $end);
+  ($name, $regex, $action, $expression, $readif, $handler);
+}
+sub _buildRegexp {
+  my $self = shift;
+  my ($start, $end) = @_;
+  my $content;
+  $content = q!(?s:.*?)!;
+  #print STDERR "[$start, $content, $end]\n";
+  [$start, $content, $end];
+}
+
+package Parse::Token::Quoted;
+use Parse::Trace;
+@Parse::Token::Quoted::ISA = qw(Parse::Token::Segmented Parse::Trace);
+
+sub _parse {
+  my $self = shift;
+  unless (@_ >= 2) {
+    require  Carp;
+    Carp::croak "bad argument number (@_)";
+  }
+
+  my ($name, $regex, $action, $expression, $readif, $handler) = 
+    ('', '', '', '', '', '');
+  my ($key, $value, $start, $end, $escape) = ('', '');
+  while (@_ >= 2) {	
+    ($key, $value) = (shift, shift);
+    if ($key =~ /^[Nn]ame$/) {
+      $name = $value;
+    } elsif ($key =~ /^[Qq]uote$/) {
+      $start = $value unless defined $start;
+      $end = $value unless defined $end;
+    } elsif ($key =~ /^[Ss]tart$/) {
+      $start = $value;
+      $end = $value unless defined $end;
+    } elsif ($key =~ /^[Ee]nd$/) {
+      $end = $value;
+      $start = $value unless defined $start;
+    } elsif ($key =~ /^[Ee]scape$/) {
+      $escape = $value;
+    } elsif ($key =~ /^[Ss]ub$/) {
+      $action = $value;
+    } elsif ($key =~ /^[Hh]andler$/) {
+      $handler = $value;
+    } else {
+      require  Carp;
+      Carp::croak "'$key' is an invalid attribute for a ", __PACKAGE__, "'s instance";
     }
   }
   unless (defined $start) {
@@ -812,9 +1107,8 @@ sub _parse {
     require Carp;
     Carp::croak "'end' char not defined";
   }
-  $regexp = $self->_buildRegexp($start, $end, $escape);
-  #print STDERR "regexp: @$regexp\n";
-  ($name, $regexp, $action, @_);
+  $regex = $self->_buildRegexp($start, $end, $escape);
+  ($name, $regex, $action, $expression, $readif, $handler);
 }
 # Examples:
 # [qw(" [^"]+(?:""[^"]*)* ")]
@@ -825,25 +1119,14 @@ sub _buildRegexp {
   my $content;
   $start = quotemeta $start;
   $end = quotemeta $end;
-  if ($escape ne '') {
+  if (defined $escape and $escape ne '') {
     $escape = quotemeta $escape;
     $content = qq![^$end$escape]*(?:$escape.! . qq![^$end$escape]*)*!;
   } else {
     $content = qq![^$end]*(?:$end$end! . qq![^$end]*)*!;
   } 
+  #print STDERR "[$start, $content, $end]\n";
   [$start, $content, $end];
-}
-
-package Parse::Token::Delimited;
-use Parse::Trace;
-@Parse::Token::Delimited::ISA = qw(Parse::Token::Multiline Parse::Trace);
-
-# Examples:
-# [qw(/* (?:.*?) */)]
-# [qw(<!-- (?:.*?) -->)]
-# [qw(<? (?:.*?) ?>)]
-sub new {
-  die "Sorry! Not yet implemented";
 }
 
 package Parse::Token::Nested;
@@ -866,41 +1149,47 @@ C<Parse::Token> - Definition of tokens used by C<Parse::Lex>
 
 =head1 SYNOPSIS
 
-	require 5.005;
+        require 5.005;
 
-	use Parse::Lex;
-	@token = qw(
-	    ADDOP    [-+]
-	    INTEGER  [1-9][0-9]*
-	   );
+        use Parse::Lex;
+        @token = qw(
+            ADDOP    [-+]
+            INTEGER  [1-9][0-9]*
+           );
 
-	$lexer = Parse::Lex->new(@token);
-	$lexer->from(\*DATA);
+        $lexer = Parse::Lex->new(@token);
+        $lexer->from(\*DATA);
 
-	$content = $INTEGER->next;
-	if ($INTEGER->status) {
-	  print "$content\n";
-	}
-	$content = $ADDOP->next;
-	if ($ADDOP->status) {
-	  print "$content\n";
-	}
-	if ($INTEGER->isnext(\$content)) {
-	  print "$content\n";
-	}
-	__END__
-	1+2
+        $content = $INTEGER->next;
+        if ($INTEGER->status) {
+          print "$content\n";
+        }
+        $content = $ADDOP->next;
+        if ($ADDOP->status) {
+          print "$content\n";
+        }
+        if ($INTEGER->isnext(\$content)) {
+          print "$content\n";
+        }
+        __END__
+        1+2
 
 =head1 DESCRIPTION
 
-The C<Token> package defines the lexemes used by C<Parse::Lex> or
-C<Parse::CLex>. The C<Lex::new()> method of the C<Parse::Lex> package
-indirectly creates a C<Parse::Token> instance for each recognized lexeme.
-The methods C<next> and C<isnext> of the C<Token> package permit easily
-interfacing the lexical analyzer with a recursive-descent syntactic analyzer
-(parser).  For interfacing with C<byacc>, see the C<Parse::YYLex> package.
+The C<Parse::Token> class and its derived classes permit defining the
+tokens used by C<Parse::Lex> or C<Parse::LexEvent>.
 
-This package is included indirectly via C<use Parse::Lex>.
+The creation of tokens can be done by means of the C<new()> or
+C<factory()> methods.  The C<Lex::new()> method of the C<Parse::Lex>
+package indirectly creates instances of the tokens to be recognized.
+
+The C<next()> or C<isnext()> methods of the C<Parse::Token> package
+permit interfacing the lexical analyzer with a syntactic analyzer
+of recursive descent type.  For interfacing with C<byacc>, see the
+C<Parse::YYLex> package.
+
+C<Parse::Token> is included indirectly by means of C<use Parse::Lex> or
+C<use Parse::LexEvent>.
 
 =head1 Methods
 
@@ -912,56 +1201,66 @@ Returns the anonymous subroutine defined within the C<Parse::Token> object.
 
 =item factory LIST
 
-Creates a list of C<Parse::Token> objects from a list of token
-specifications.  The list can also include objects of class
-C<Parse::Token> or of a class derived from it.  Can be used
-as a class method or instance method.
+=item factory ARRAY_REF
 
-The C<factory(LIST)> method can be used to create a set
-of tokens which are not within the analysis automaton.
-This method carries out two operations: 1) it creates the
-objects based on the specifications given in LIST (see the
-C<new()> method), and 2) it imports the created objects into
-the calling package.
+The C<factory(LIST)> method creates a list of tokens from a list
+of specifications, which include for each token: a name, a
+regular expression, and possibly an anonymous subroutine.
+The list can also include objects of class C<Parse::Token>
+or of a class derived from it.
+
+The C<factory(ARRAY_REF)> method permits creating tokens from
+specifications of type attribute-value:
+
+        Parse::Token->factory([Type => 'Simple', 
+                               Name => 'EXAMPLE', 
+                               Regex => '.+']);
+
+C<Type> indicates the type of each token to be created
+(the package prefix is not indicated).
+
+C<factory()> creates a series of tokens but does not import these
+tokens into the calling package.
 
 You could for example write:
 
-	%keywords = 
-	  qw (
-	      PROC  undef
-	      FUNC  undef
-	      RETURN undef
-	      IF    undef
-	      ELSE  undef
-	      WHILE undef
-	      PRINT undef
-	      READ  undef
-	     );
-	Parse::Token->factory(%keywords);
+        %keywords = 
+          qw (
+              PROC  undef
+              FUNC  undef
+              RETURN undef
+              IF    undef
+              ELSE  undef
+              WHILE undef
+              PRINT undef
+              READ  undef
+             );
+        @tokens = Parse::Token->factory(%keywords);
 
 and install these tokens in a symbol table in the following manner:
 
-	foreach $name (keys %keywords) {
-	  $symbol{"\L$name"} = [${$name}, ''];
-	}
+        foreach $name (keys %keywords) {
+	  ${$name} = pop @tokens;
+          $symbol{"\L$name"} = [${$name}, ''];
+        }
 
-C<${$name}> is the C<Parse::Token> object.
+C<${$name}> is the token instance.
 
 During the lexical analysis phase, you can use the tokens in the
 following manner:
 
-	qw(IDENT [a-zA-Z][a-zA-Z0-9]*),  sub {		      
-	   $symbol{$_[1]} = [] unless defined $symbol{$_[1]};
-	   my $type = $symbol{$_[1]}[0];
-	   $lexer->setToken((not defined $type) ? $VAR : $type);
-	   $_[1];  # THE TOKEN TEXT
-	 }
+        qw(IDENT [a-zA-Z][a-zA-Z0-9_]*),  sub {
+           $symbol{$_[1]} = [] unless defined $symbol{$_[1]};
+           my $type = $symbol{$_[1]}[0];
+           $lexer->setToken((not defined $type) ? $VAR : $type);
+           $_[1];  # THE TOKEN TEXT
+         }
 
 This permits indicating that any symbol of unknown type is a variable.
 
-In this example we have used  C<$_[1]> which corresponds to the text
-recognized by the regular expression.  This text is what is returned
-by the anonymous subroutine.
+In this example we have used C<$_[1]> which corresponds to the text
+recognized by the regular expression.  This text associated with the
+token must be returned by the anonymous subroutine.
 
 =item get EXPR
 
@@ -984,7 +1283,7 @@ EXPR if it is a reference to a scalar.
 
 =item name
 
-Returns the symbolic name of the C<Parse::Token> object.
+Returns the name of the token.
 
 =item next
 
@@ -995,15 +1294,22 @@ status of the object to true.
 
 =item new SYMBOL_NAME, REGEXP, SUB
 
-Creates an object of the C<Parse::Token> type. The arguments of the C<new>
-method are: a symbolic name, a regular expression, and an anonymous
-subroutine.
+=item new SYMBOL_NAME, REGEXP
+
+Creates an object of type C<Parse::Token::Simple> or
+C<Parse::Token::Segmented>. The arguments of the C<new()> method are,
+respectively: a symbolic name, a regular expression, and possibly
+an anonymous subroutine.  The subclasses of C<Parse::Token> permit
+specifying tokens by means of a list of attribute-values.
 
 REGEXP is either a simple regular expression, or a reference to an
-array containing from one to three regular expressions. In the latter
-case the lexeme can span several lines. For example, it
-can be a character string delimited by quotation marks, comments in a
-C program, etc. The regular expressions are used to recognize:
+array containing from one to three regular expressions.  In the
+first case, the instance belongs to the C<Parse::Token::Simple>
+class.  In the second case, the instance belongs to the
+C<Parse::Token::Segmented> class.  The tokens of this type permit
+recognizing structures of type character string delimited by
+quotation marks, comments in a C program, etc.  The regular
+expressions are used to recognize:
 
 1. The beginning of the lexeme,
 
@@ -1016,7 +1322,7 @@ several lines).
 
 Example:
 
-	  qw(STRING), [qw(" (?:[^"\\\\]+|\\\\(?:.|\n))* ")],
+          qw(STRING), [qw(" (?:[^"\\\\]+|\\\\(?:.|\n))* ")],
 
 These regular expressions can recognize multi-line strings
 delimited by quotation marks, where the backslash is used to quote the
@@ -1026,18 +1332,17 @@ the backslash.
 Here is a variation of the previous example which uses the C<s>
 option to include newline in the characters recognized by "C<.>":
 
-	  qw(STRING), [qw(" (?s:[^"\\\\]+|\\\\.)* ")],
+          qw(STRING), [qw(" (?s:[^"\\\\]+|\\\\.)* ")],
 
 (Note: it is possible to write regular expressions which are
 more efficient in terms of execution time, but this is not our
-objective with this example.)
+objective with this example.  See I<Mastering Regular Expressions>.)
 
 The anonymous subroutine is called when the lexeme is recognized by the
 lexical analyzer. This subroutine takes two arguments: C<$_[0]> contains
-the C<Parse::Token> object, and C<$_[1]> contains the string recognized
+the token instance, and C<$_[1]> contains the string recognized
 by the regular expression. The scalar returned by the anonymous
-subroutine defines the character string memorized in the C<Parse::Token>
-object.
+subroutine defines the character string memorized in the token instance.
 
 In the anonymous subroutine you can use the positional variables
 C<$1>, C<$2>, etc. which correspond to the groups of parentheses
@@ -1049,7 +1354,7 @@ Returns the regular expression of the C<Token> object.
 
 =item set LIST
 
-Allows marking a Token object with a list of attribute-value
+Allows marking a token with a list of attribute-value
 pairs.
 
 An attribute name can be used as a method name.
@@ -1072,8 +1377,8 @@ C<status EXPR> overrides the existing value and sets it to the value of EXPR.
 
 =item text
 
-C<text()> Returns the character string recognized by means of the
-C<Token> object. The value of C<EXPR> sets the character string
+C<text()> returns the character string recognized by means of the
+token. The value of C<EXPR> sets the character string
 associated with the lexeme.
 
 =item trace OUTPUT 
@@ -1088,33 +1393,295 @@ the trace will be directed.
 
 =back
 
-=head1 ERROR HANDLING
-
-To handle the cases of nonrecognition of lexemes you can define a
-special C<Token> object at the end of the list of tokens which
-defines the lexical analyzer. If the search for this token succeeds it is
-then possible to call a subroutine reserved for error handling.
-
-=head1 FUTURE CHANGES
+=head1 Subclasses of Parse::Token
 
 Subclasses of the C<Parse::Token> class are being defined.
-They will permit recognizing specific structures such as,
+They permit recognizing specific structures such as,
 for example, strings within double-quotes, C comments, etc.
-Here are the subclasses which I plan to create:
+Here are the subclasses which I am working on:
 
-C<Parse::Token::Simple> : for defining 'ordinary' tokens.
+C<Parse::Token::Simple> : tokens of this class are defined
+by means of a single regular expression.
 
-C<Parse::Token::Multiline> : for defining tokens which
-may necessitate reading additional data.
+C<Parse::Token::Segmented> : tokens of this class are defined
+by means of three regular expressions.  Reading of new data
+is done automatically.
 
-C<Parse::Token::Nested> : for recognizing nested structures
-such as parenthesized expressions.
+C<Parse::Token::Delimited> : permits recognizing, for example,
+C language comments.
 
-C<Parse::Token::Delimited> : for recognizing, for example,
-strings within double-quotes.
+C<Parse::Token::Quoted> : permits recognizing, for example,
+character strings within quotation marks.
 
-The names of these classes as proposed above may be changed
-if you wish to suggest alternatives.
+C<Parse::Token::Nested> : permits recognizing nested structures
+such as parenthesized expressions.  NOT DEFINED.
+
+These classes are recently created and no doubt contain some bugs.
+
+=head2 Parse::Token::Action 
+
+Tokens of the C<Parse::Token::Action> class permit inserting arbitrary
+Perl expressions within a lexical analyzer.  An expression can be used
+for instance to print out internal variables of the analyzer:
+
+=over 
+
+=item *
+
+C<$LEX_BUFFER> : contents of the buffer to be analyzed
+
+=item *
+
+C<$LEX_LENGTH> : length of the character string being analyzed
+
+=item *
+
+C<$LEX_RECORD> : number of the record being analyzed
+
+=item *
+
+C<$LEX_OFFSET> : number of characters already consumed since the start
+of the analysis.
+
+=item *
+
+C<$LEX_POS> : position reached by the analysis as a number of characters
+since the start of the buffer.
+
+=back
+
+The class constructor accepts the following attributes:
+
+=over 
+
+=item *
+
+C<Name> : the name of the token
+
+=item * 
+
+C<Expr> : a Perl expression
+
+=back
+
+Example :
+
+        $ACTION = new Parse::Token::Action(
+                                      Name => 'ACTION',
+                                      Expr => q!print "LEX_POS: $LEX_POS\n" .
+                                      "LEX_BUFFER: $LEX_BUFFER\n" .
+                                      "LEX_LENGTH: $LEX_LENGTH\n" .
+                                      "LEX_RECORD: $LEX_RECORD\n" .
+                                      "LEX_OFFSET: $LEX_OFFSET\n" 
+                                      ;!,
+                                     );
+
+=head2 Parse::Token::Simple
+
+The class constructor accepts the following attributes:
+
+=over
+
+=item * 
+
+C<Handler> : the value indicates the name of a function to call during
+an analysis performed by an analyzer of class C<Parse::LexEvent>.
+
+=item * 
+
+C<Name> : the associated value is the name of the token.
+
+=item * 
+
+C<Regex> : the associated value is a regular expression
+corresponding to the pattern to be recognized.
+
+=item * 
+
+C<ReadMore> : if the associated value is 1, the recognition of the token
+continues after reading a new record.  The strings recognized are
+concatenated.  This attribute only has effect during analysis of a
+character stream.
+
+=item * 
+
+C<Sub> : the associated value must be an anonymous subroutine to be
+executed after the token is recognized.  This function is only used
+with analyzers of class C<Parse::Lex> or C<Parse::CLex>.
+
+=back
+
+Example.
+      new Parse::Token::Simple(Name => 'remainder', 
+                               Regex => '[^/\'\"]+', 
+                               ReadMore => 1);
+
+=head2 Parse::Token::Segmented
+
+The definition of these tokens includes three regular expressions.
+During analysis of a data stream, new data is read as long as the
+end of the token has not been reached.
+
+The class constructor accepts the following attributes:
+
+=over
+
+=item * 
+
+C<Handler> : the value indicates the name of a function to call during
+analysis performed by an analyzer of class C<Parse::LexEvent>.
+
+=item * 
+
+C<Name> : the associated value is the name of the token.
+
+=item * 
+
+C<Regex> : the associated value must be a reference to an array that
+contains three regular expressions.
+
+=item * 
+
+C<Sub> : the associated value must be an anonymous subroutine to be
+executed after the token is recognized.  This function is only used
+with analyzers of class C<Parse::Lex> or C<Parse::CLex>.
+
+=back
+
+=head2 Parse::Token::Quoted
+
+C<Parse::Token::Quoted> is a subclass of
+C<Parse::Token::Segmented>.  It permits recognizing character
+strings within double quotes or single quotes.
+
+Examples.
+
+      ---------------------------------------------------------
+       Start    End            Escaping
+      ---------------------------------------------------------
+        '        '              ''
+        "        "              ""
+        "        "              \
+      ---------------------------------------------------------
+
+The class constructor accepts the following attributes:
+
+=over
+
+=item * 
+
+C<End> : The associated value is a regular expression permitting
+recognizing the end of the token.
+
+=item * 
+
+C<Escape> : The associated value indicates the character used to escape
+the delimiter.  By default, a double occurrence of the terminating
+character escapes that character.
+
+=item * 
+
+C<Handler> : the value indicates the name of a function to be called
+during an analysis performed by an analyzer of class C<Parse::LexEvent>.
+
+=item * 
+
+C<Name> : the associated value is the name of the token.
+
+=item * 
+
+C<Start> : the associated value is a regular expression permitting
+recognizing the start of the token.
+
+=item * 
+
+C<Sub> : the associated value must be an anonymous subroutine to be
+executed after the token is recognized.  This function is only used
+with analyzers of class C<Parse::Lex> or C<Parse::CLex>.
+
+=back
+
+Example.
+      new Parse::Token::Quoted(Name => 'squotes', 
+                               Handler => 'string',
+                               Escape => '\\',
+                               Quote => qq!\'!, 
+                              );
+
+=head2 Parse::Token::Delimited
+
+C<Parse::Token::Delimited> is a subclass of
+C<Parse::Token::Segmented>.  It permits, for example, recognizing C
+language comments.
+
+Examples.
+
+      ---------------------------------------------------------
+        Start   End     Constraint
+                        on the contents
+      ---------------------------------------------------------
+        /*       */                         C Comment
+        <!--     -->      No '--'           XML Comment
+        <!--     -->                        SGML Comment
+        <?       ?>                         Processing instruction
+                                            in SGML/XML
+      ---------------------------------------------------------
+
+The class constructor accepts the following attributes:
+
+=over 4
+
+=item * 
+
+C<End> : The associated value is a regular expression permitting
+recognizing the end of the token.
+
+=item * 
+
+C<Handler> : the value indicates the name of a function to be called
+during an analysis performed by an analyzer of class C<Parse::LexEvent>.
+
+=item * 
+
+C<Name> : the associated value is the name of the token.
+
+=item * 
+
+C<Start> : the associated value is a regular expression permitting
+recognizing the start of the token.
+
+=item * 
+
+C<Sub> : the associated value must be an anonymous subroutine to be
+executed after the token is recognized.  This function is only used
+with analyzers of class C<Parse::Lex> or C<Parse::CLex>.
+
+=back
+
+Example.
+      new Parse::Token::Delimited(Name => 'comment',
+                                  Start => '/[*]', 
+                                  End => '[*]/'
+                                 );
+
+=head2 Parse::Token::Nested - Not defined
+
+Examples.
+
+      ----------------------------------------------------------
+        Start   End
+      ----------------------------------------------------------
+        (        )                      Symbolic Expressions
+        {        }                      Rich Text Format Groups
+      ----------------------------------------------------------
+
+
+=head1 BUGS
+
+The implementation of subclasses of tokens is not complete for
+analyzers of the C<Parse::CLex> class.  I am not too keen to do
+it, since an implementation for classes C<Parse::Lex> and
+C<Parse::LexEvent> seems quite sufficient.
 
 =head1 AUTHOR
 
@@ -1125,6 +1692,8 @@ Alexiev and Ocrat.
 
 Version 2.0 owes much to suggestions made by Vladimir Alexiev.
 Ocrat has significantly contributed to improving this documentation.
+Thanks also to the numerous persons who have made comments or sometimes
+sent bug fixes.
 
 =head1 REFERENCES
 

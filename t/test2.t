@@ -3,7 +3,7 @@
 BEGIN {  push(@INC, './t') }
 use W;
 
-require 5.004; # or use CLex.pl
+require 5.004; 
 
 $test = W->new('1..1');
 $test->result("examples/every.pl");

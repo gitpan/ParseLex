@@ -4,9 +4,9 @@ require 5.004;
 use strict;
 use lib "../lib";
 
-package Parse::SExpressions;
+package Parse::SymbolicExpressions;
 use Parse::Lex;
-@Parse::SExpressions::ISA = qw(Parse::Lex);
+@Parse::SymbolicExpressions::ISA = qw(Parse::Lex);
 
 sub upto {
   my $self = shift;
@@ -63,7 +63,7 @@ my @token = (
 	     }
 	    );
 
-my $lexer = Parse::SExpressions->new(@token);
+my $lexer = Parse::SymbolicExpressions->new(@token);
 
 my $exp = '(* 2 (+ 3 3))';
 $lexer->from($exp);

@@ -1,5 +1,5 @@
 package W;
-my $verbose=$ENV{TEST_VERBOSE};
+my $verbose = $ENV{TEST_VERBOSE};
 my $log = $ENV{TEST_LOG} ? 'testlog' : 0;
 
 if ($log) {
@@ -23,18 +23,22 @@ sub result {			# ad hoc method
   my @err;
   my $result;
   if ($cmd) {
-    print "Execution of $^X $cmd 2>err\n" if $verbose;
+    print "Execution of $^X $cmd\n" if $verbose;
     die qq^unable to find "$cmd"^ unless (-f $cmd);
 
-    open( CMD, "$^X $cmd 2>err |" ) 
-      or warn "$0: Can't run. $!\n";
+    # the following line doesn't work on Win95 (ActiveState's Perl, build 516):
+    # open( CMD, "$^X $cmd 2>err |" ) or warn "$0: Can't run. $!\n";
+    # corrected by Stefan Becker:
+    open STDERR, "> err";
+    open( CMD, "$^X $cmd |" ) or warn "$0: Can't run. $!\n";
     @result = <CMD>;
     close CMD;
+    close STDERR;
 
-    open( CMD, "<err" ) 
-      or warn "$0: Can't open: $!\n";
+    open( CMD, "< err" ) or warn "$0: Can't open: $!\n";
     @err = <CMD>;
     close CMD;
+
     push @result, @err if @err;
 
     $self->{result} = join('', @result);

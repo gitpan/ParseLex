@@ -10,9 +10,7 @@ $lexer = Parse::Lex->new(qw(
 			    NEWLINE \n
 			   ));
 
-#or $lexer->from(*DATA);
-$lexer->from(\*DATA);
-
+$lexer->from(\*DATA);		#or $lexer->from(*DATA);
 $lexer->every (sub { 
 		 my $self = shift;
 		 print $self->name, "\t";
