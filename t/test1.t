@@ -12,8 +12,8 @@ print $test->report(1, sub {
 		      my $expectation =  $test->expected;
 		      my $result =  $test->result;
 		      $expectation =~ s/\s+$//;
-		      print STDERR "Result:\n$result\n";
-		      print STDERR "Expectation:\n$expectation\n";
+		      #print STDERR "Result:\n$result\n";
+		      #print STDERR "Expectation:\n$expectation\n";
 		      $result =~ s/\s+$//;
 		      $expectation eq $result;
 		    });
@@ -39,20 +39,20 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 1.19
+Version 2.01
 Trace is ON in class Parse::Lex
-[main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]* ): 1
-[main::lexer|Parse::Lex] Token read (ADDOP, [-+] ): +
-[main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]* ): 2
-[main::lexer|Parse::Lex] Token read (ADDOP, [-+] ): -
-[main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]* ): 5
-[main::lexer|Parse::Lex] Token read (NEWLINE, 
- ): 
+[main::lexer|Parse::Lex] Token read (INTEGER, '[1-9][0-9]*'): 1
+[main::lexer|Parse::Lex] Token read (ADDOP, '[-+]'): +
+[main::lexer|Parse::Lex] Token read (INTEGER, '[1-9][0-9]*'): 2
+[main::lexer|Parse::Lex] Token read (ADDOP, '[-+]'): -
+[main::lexer|Parse::Lex] Token read (INTEGER, '[1-9][0-9]*'): 5
+[main::lexer|Parse::Lex] Token read (NEWLINE, '
+'): 
 
-[main::lexer|Parse::Lex] Token read (STRING, "(?:[^"]+|"")*" ): "This is a multiline
+[main::lexer|Parse::Lex] Token read (STRING, '"(?:[^"]+|"")*"'): "This is a multiline
 string with an embedded "" in it"
-[main::lexer|Parse::Lex] Token read (NEWLINE, 
- ): 
+[main::lexer|Parse::Lex] Token read (NEWLINE, '
+'): 
 
-[main::lexer|Parse::Lex] Token read (ERROR, .* ): this is an invalid string with a "" in it"
-can't analyze: "this is an invalid string with a "" in it"" at examples/tokenizer.pl line 22.
+[main::lexer|Parse::Lex] Token read (ERROR, '.*'): this is an invalid string with a "" in it"
+can't analyze: "this is an invalid string with a "" in it""

@@ -14,7 +14,7 @@ $lexer->from(\*DATA);
 $lexer->every (sub { 
 		 my $self = shift;
 		 print $self->name, "\t";
-		 print $self->getstring, "\n";
+		 print $self->text, "\n";
 	       });
 
 __END__

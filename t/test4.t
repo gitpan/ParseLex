@@ -37,20 +37,20 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 1.19
+Version 2.01
 Trace is ON in class Parse::CLex
-[main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 1
-[main::lexer|Parse::CLex] Token read (ADDOP, [-+]): +
-[main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 2
-[main::lexer|Parse::CLex] Token read (ADDOP, [-+]): -
-[main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 5
-[main::lexer|Parse::CLex] Token read (NEWLINE, 
-): 
+[main::lexer|Parse::CLex] Token read (INTEGER, '[1-9][0-9]*'): 1
+[main::lexer|Parse::CLex] Token read (ADDOP, '[-+]'): +
+[main::lexer|Parse::CLex] Token read (INTEGER, '[1-9][0-9]*'): 2
+[main::lexer|Parse::CLex] Token read (ADDOP, '[-+]'): -
+[main::lexer|Parse::CLex] Token read (INTEGER, '[1-9][0-9]*'): 5
+[main::lexer|Parse::CLex] Token read (NEWLINE, '
+'): 
 
-[main::lexer|Parse::CLex] Token read (STRING, "(?:[^"]+|"")*"): "This is a multiline
+[main::lexer|Parse::CLex] Token read (STRING, '"(?:[^"]+|"")*"'): "This is a multiline
 string with an embedded "" in it"
-[main::lexer|Parse::CLex] Token read (NEWLINE, 
-): 
+[main::lexer|Parse::CLex] Token read (NEWLINE, '
+'): 
 
-[main::lexer|Parse::CLex] Token read (ERROR, .*): this is an invalid string with a "" in it"
-can't analyze: "this is an invalid string with a "" in it"" at examples/ctokenizer.pl line 22.
+[main::lexer|Parse::CLex] Token read (ERROR, '.*'): this is an invalid string with a "" in it"
+can't analyze: "this is an invalid string with a "" in it"" at examples/ctokenizer.pl line 18, <DATA> chunk 4.

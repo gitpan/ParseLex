@@ -1,7 +1,7 @@
 =head1 NAME
 
 C<Parse::Token> - Classe définissant les tokens utilisés par
-Parse::Lex.pm (1.17).
+Parse::Lex.pm (Beta 2.01).
 
 =head1 SYNOPSIS
 
@@ -32,11 +32,13 @@ Parse::Lex.pm (1.17).
 
 =head1 DESCRIPTION
 
-Le package C<Token> permet de définir les lexèmes utilisés par
-C<Parse::Lex>. La méthode C<Lex::new> du package C<Parse::Lex> crée
-indirectement un objet de type C<Token> par lexème à reconnaître.  Les
-méthodes C<next> ou C<isnext> du package C<Token> permettent d'interfacer
-aisément l'analyseur lexical avec un analyseur syntaxique.
+Le package C<Token> permet de définir les tokens utilisés par
+C<Parse::Lex> ou par C<Parse::CLex>. La méthode C<Lex::new()> du
+package C<Parse::Lex> crée indirectement un objet de type C<Token> par
+token à reconnaître.  Les méthodes C<next()> ou C<isnext()> du package
+C<Token> permettent d'interfacer l'analyseur lexical avec un analyseur
+syntaxique de type récursif descendant. Pour un interfaçage avec byacc
+voir le package C<Parse::YYLex>.
 
 Le package C<Parse::Token> n'est pas destiné à être directement
 utilisé.  L'inclusion de ce package se fait par le biais d'un
@@ -44,18 +46,78 @@ C<use Parse::Lex>.
 
 =head2 Méthodes
 
+=over 4
+
+=item action
+
+Retourne la fonction anonyme définie dans l'objet C<Parse::Token>.
+
+=item factory LISTE
+
+Créer une liste d'objets C<Parse::Token> à partir d'une liste de
+spécifications de tokens. La liste peut également inclure des objets
+de la classe C<Parse::Token> ou d'une classe qui en dérive. Peut
+s'utiliser comme méthode de classe ou d'instance.
+
+La méthode C<factory(LISTE)> peut être utilisée pour créer un ensemble
+de tokens qui ne sont pas dans l'automate d'analyse. Cette méthode
+effectue deux opérations : 1) elle crée les objets en fonction des
+spécifications figurant dans LISTE (voir la méthode C<new()>), 2) elle
+importe les objets créés dans le package d'appel.
+
+On pourra pas exemple écrire :
+
+	%keywords = 
+	  qw (
+	      PROC  undef
+	      FUNC  undef
+	      RETURN undef
+	      IF    undef
+	      ELSE  undef
+	      WHILE undef
+	      PRINT undef
+	      READ  undef
+	     );
+	Parse::Token->factory(%keywords);
+
+et installer ces tokens dans une table des symboles de la manière
+suivante :
+
+	foreach $name (keys %keywords) {
+	  $symbol{"\L$name"} = [${$name}, ''];
+	}
+
+C<${$name}> est l'objet Token.
+
+Lors de la phase d'analyse lexicale on pourra utiliser les tokens de
+la manière suivante :
+
+	qw(IDENT [a-zA-Z][a-zA-Z0-9]*),  sub {		      
+	   $symbol{$_[1]} = [] unless defined $symbol{$_[1]};
+	   my $type = $symbol{$_[1]}[0];
+	   $lexer->setToken((not defined $type) ? $VAR : $type);
+	   $_[1];  # THE TOKEN TEXT
+	 }
+
+Ce qui permet d'indiquer que tout symbole dont le type est inconnu est
+une variable.
+
+Dans cet exemple nous avons utilisé C<$_[1]> qui correspond au texte
+reconnu par l'expression régulière.  Ce texte constitue le retour de
+la fonction anonyme.
+
 =item get EXPR
 
-C<get> permet d'obtenir la valeur de l'attribut résultant de
-l'évaluation d'EXPR.  Il est également possible d'utiliser le nom de
-l'attribut comme nom de méthode.
+Permet d'obtenir la valeur de l'attribut résultant de l'évaluation
+d'EXPR.  Il est également possible d'utiliser le nom de l'attribut
+comme nom de méthode.
 
-=item getstring
+=item getText
 
 Retourne la chaîne de caractères reconnue au moyen de l'objet
-C<Token>.
+C<Parse::Token>.
 
-Synonyme de la méthode text().
+Synonyme de la méthode C<text()>.
 
 =item isnext EXPR
 
@@ -64,42 +126,38 @@ Synonyme de la méthode text().
 Retourne le statut du token. La chaîne consommée est disponible dans
 EXPR s'il s'agit d'une référence à un scalaire.
 
-=item mean
-
-Retourne la fonction anonyme définie dans l'objet C<Token>.
-
 =item name
 
-Retourne le nom symbolique de l'objet C<Token>.
+Retourne le nom symbolique de l'objet C<Parse::Token>.
 
 =item next
 
-Active la recherche du lexème défini par l'expression régulière
-contenue dans l'objet. Si ce lexème est reconnu sur le flot de
-caractère à analyser alors C<next> retourne la chaîne trouvée et met le
+Active la recherche du token défini par l'expression régulière
+contenue dans l'objet. Si ce token est reconnu sur le flot de
+caractère à analyser alors C<next()> retourne la chaîne trouvée et met le
 statut de l'objet à vrai.
 
 =item new SYMBOL_NAME, REGEXP, SUB
 
-Crée un objet de type C<Token>. Les arguments de la méthode C<new> sont
+Crée un objet de type C<Parse::Token>. Les arguments de la méthode C<new()> sont
 dans l'ordre : un nom symbolique, une expression régulière et une
 fonction anonyme.
 
 REGEXP est soit une expression régulière simple, soit une référence à
 un tableau contenant de une à trois expressions régulières. Dans ce
-dernier cas le lexème peut être réparti sur plusieurs
+dernier cas le token peut être réparti sur plusieurs
 enregistrements. Ce peut être par exemple une chaîne de caractères
 délimitée par des guillemets, des commentaires d'un programme C, etc.
 
 Les expressions régulières sont utilisées pour reconnaître :
 
-1. le début du lexème, 
+1. le début du token, 
 
-2. le "corps" du lexème, si cette seconde expression est absente
-C<Parse::Lex> utilise "(?:.*?)",
+2. le "corps" du token, si cette seconde expression est absente
+C<Parse::Lex> utilise C<(?:.*?)>,
 
-3. la fin du lexème, si cette dernière expression est absente
-on utilise la première.  (Attention ! La fin du lexème ne peut être à
+3. la fin du token, si cette dernière expression est absente
+on utilise la première.  (Attention ! La fin du token ne peut être à
 cheval sur plusieurs enregistrements).
 
 Exemple.
@@ -108,48 +166,51 @@ Exemple.
 
 Les expressions régulières peuvent reconnaître des chaînes multilignes
 délimitées par des guillemets, sachant que le contre-oblique est
-utilisé pour littéraliser les guillements qui apparaissent au sein de
+utilisé pour littéraliser les guillemets qui apparaissent au sein de
 la chaîne. Remarquez le quadruplement du contre-oblique.
 
 Voici une variante de l'exemple précédent qui utilise l'option C<s>
-pour inclure la nouvelle-ligne dans les caractères reconnus par "." :
+pour inclure la nouvelle-ligne dans les caractères reconnus par "C<.>" :
 
 	  qw(STRING), [qw(" (?s)(?:[^"\\\\]+|\\\\.)* ")],
 
+(Remarques. Il est possible d'écrire des expressions régulières plus
+performantes en terme de temps d'exécution, mais ce n'est pas notre
+objectif ici.)
 
-La fonction anonyme est exécutée au moment ou le lexème est reconnu
-par l'analyseur lexical. Cette fonction possède deux arguments : $_[0]
-contient l'objet C<Token>, $_[1] la chaîne reconnue par l'expression
+La fonction anonyme est exécutée au moment ou le token est reconnu
+par l'analyseur lexical. Cette fonction possède deux arguments : C<$_[0]>
+contient l'objet C<Parse::Token>, C<$_[1]> la chaîne reconnue par l'expression
 régulière. Le scalaire retourné par la fonction anonyme définit la
-chaîne de caractères mémorisée dans l'objet C<Token>.
+chaîne de caractères placée dans l'objet C<Parse::Token>.
 
 Dans la fonction anonyme vous pouvez utiliser les variables
-positionnelles $1, $2,... sachant que $1 contient la chaîne reconnue
-par l'expression régulière de l'objet Token.
+positionnelles C<$1>, C<$2>, ... qui correspondent aux parenthèses placées
+dans l'expression régulière.
 
 =item regexp
 
-Retourne l'expression régulière définie dans l'objet C<Token>.
+Retourne l'expression régulière définie dans l'objet C<Parse::Token>.
 
-=item set HASH
+=item set LISTE
 
 Permet de décorer un objet Token au moyen d'une liste
 d'attribut-valeurs.
 
 Un nom d'attribut peut être utilisé comme nom de méthode.
 
-=item setstring EXPR
+=item setText EXPR
 
-La valeur de C<EXPR> définit la chaîne de caractères associée au 
-lexème.
+La valeur de EXPR définit la chaîne de caractères associée au 
+token.
 
-Synonyme de la méthode text(EXPR).
+Synonyme de la méthode C<text(EXPR)>.
 
 =item status EXPR
 
 =item status
 
-Indique si la dernière recherche du lexème a réussie ou échouée.
+Indique si la dernière recherche du token a réussie ou échouée.
 C<status EXPR> permet de forcer le statut à la valeur dénotée
 par EXPR.
 
@@ -157,9 +218,9 @@ par EXPR.
 
 =item text
 
-C<text> Retourne la chaîne de caractères reconnue au moyen de l'objet
-C<Token>. La valeur de C<EXPR> définit la chaîne de caractères
-associée au lexème.
+C<text()> Retourne la chaîne de caractères reconnue au moyen de
+l'objet C<Parse::Token>. La valeur de EXPR permet de définir la
+chaîne de caractères associée au token.
 
 =item trace OUTPUT 
 
@@ -168,36 +229,36 @@ associée au lexème.
 Méthode de classe qui active/désactive une trace de l'analyse
 lexicale. 
 
-C<OUTPUT> peut être un fichier ou une référence à un
+C<OUTPUT> peut être un nom de fichier ou une référence à un
 filehandle vers laquelle la trace va être dirigée.
 
 =head1 GESTION DES ERREURS
 
-Pour traiter les cas de non reconnaissance de lexème vous pouvez
-définir un objet C<Token> spécifique.  Si la recherche de ce token
-réussie il est alors possible d'appeler une fonction dévolue au
-traitement des erreurs.
+Pour traiter les cas de non reconnaissance de token vous pouvez
+définir un token spécifique en fin de la liste des tokens composant
+notre analyseur lexical.  Si la recherche de ce token réussie il est
+alors possible d'appeler une fonction dévolue au traitement des
+erreurs.
 
 =head1 AUTEUR
 
-Philippe Verdret. 
+Philippe Verdret
 
-=head1 AVERTISSEMENT
+=head1 REMERCIEMENTS
 
-Je considère que la présente version de Token.pm/Lex.pm est
-expérimentale. Ce module peut notablement évoluer. J'aimerais recevoir
-vos remarques et vos suggestions.
+La version 2.0 doit beaucoup aux suggestions de Vladimir Alexiev.
+Ocrat a largement contribué à l'amélioration de cette documentation.
 
 =head1 REFERENCES
 
 Friedl, J.E.F. Mastering Regular Expressions. O'Reilly & Associates
 1996.
 
-Mason, T & Brown, D. - Lex & Yacc. O'Reilly & Associates, Inc. 1990.
+Mason, T. & Brown, D. - Lex & Yacc. O'Reilly & Associates, Inc. 1990.
 
 =head1 COPYRIGHT
 
-Copyright (c) 1995-1997 Philippe Verdret. All rights reserved.
+Copyright (c) 1995-1998 Philippe Verdret. All rights reserved.
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

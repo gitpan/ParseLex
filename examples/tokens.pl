@@ -3,7 +3,7 @@ require 5.000;
 
 use Parse::CLex;
 
-print STDERR "Version $Parse::Lex::VERSION\n";
+print STDERR "Version $Parse::ALex::VERSION\n";
 @token = qw(
 	    ADDOP    [-+]
 	    INTEGER  [1-9][0-9]*

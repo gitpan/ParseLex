@@ -12,9 +12,6 @@ $Trace::indent = 0;
 my $TRACE = \*STDERR;		# Default
 
 my %cache = ();
-# todo: 
-# - have the choice to use or not the cache
-# - reinitialize the cache
 sub name { $cache{$_[0]} or ($cache{$_[0]} = $_[0]->findName) }
 sub inpkg { 'main' }		# no better definition at the present time
 
@@ -25,15 +22,13 @@ sub findName {			# Try to find the "name" of self
   my $symbol;
   my $value;
   no strict qw(refs);
-  my $CW = $^W;
-  $^W = 0;
+  local $^W = 0;
   map {
     ($symbol = ${"${pkg}::"}{$_}) =~ s/[*]//;
     if (defined($value = ${$symbol})) {
       return $symbol if ($value eq $self);
     } 
   } keys %{"${$pkg}::"};
-  $^W = $CW;
   use strict qw(refs);
   return 'no name';
 }

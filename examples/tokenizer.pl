@@ -2,12 +2,8 @@
 
 require 5.004; # or use CLex.pl
 
-BEGIN {		
-  push(@INC,  ("$ENV{'HOME'}/lib/perl5")); # or PERL5LIB
-}
-
 use Parse::Lex;
-print STDERR "Version $Parse::Lex::VERSION\n";
+print STDERR "Version $Parse::ALex::VERSION\n";
 
 @token = (
 	  qw(
@@ -19,7 +15,7 @@ print STDERR "Version $Parse::Lex::VERSION\n";
 	    ),
 	  qw(STRING),   [qw(" (?:[^"]+|"")* ")],
 	  qw(ERROR  .*), sub {
-	    die qq!can\'t analyze: "$_[1]"!;
+	    die qq!can\'t analyze: "$_[1]"\n!;
 	  }
 	 );
 
@@ -32,9 +28,9 @@ print "Tokenization of DATA:\n";
 TOKEN:while (1) {
   $token = $lexer->next;
   if (not $lexer->eoi) {
-    print "Record number: ", $lexer->recordno, "\n";
+    print "Record number: ", $lexer->line, "\n";
     print "Type: ", $token->name, "\t";
-    print "Content:->", $token->getstring, "<-\n";
+    print "Content:->", $token->text, "<-\n";
   } else {
     last TOKEN;
   }
