@@ -1,11 +1,12 @@
 #!/usr/local/bin/perl -w
 
-require 5.004; # or use CLex.pl
+require 5.004; 
 use strict;
-BEGIN {  unshift @INC, "../lib"; }
-package Parse::MyLex;
+use lib "../lib";
+
+package Parse::SExpressions;
 use Parse::Lex;
-@Parse::MyLex::ISA = qw(Parse::Lex);
+@Parse::SExpressions::ISA = qw(Parse::Lex);
 
 sub upto {
   my $self = shift;
@@ -62,11 +63,11 @@ my @token = (
 	     }
 	    );
 
-my $lexer = Parse::MyLex->new(@token);
+my $lexer = Parse::SExpressions->new(@token);
 
-my $sexp = '(* 2 (+ 3 3))';
-$lexer->from($sexp);
-print "result of $sexp: ", $lexer->next->text, "\n";
+my $exp = '(* 2 (+ 3 3))';
+$lexer->from($exp);
+print "result of $exp: ", $lexer->next->text, "\n";
 
 __END__
 

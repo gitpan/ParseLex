@@ -4,7 +4,7 @@ BEGIN {  push(@INC, './t') }
 use W;
 
 $test = W->new('1..1');
-$test->result("examples/tokens.pl");
+$test->result("examples/ctokens.pl");
 $test->expected(\*DATA);
 print $test->report(1, sub { 
 		      my $expectation =  $test->expected;
@@ -20,4 +20,4 @@ __END__
 1
 +
 2
-Version 2.05
+Version 2.07

@@ -1,6 +1,7 @@
 #!/usr/local/bin/perl
 
-require 5.004; # or use CLex.pl
+require 5.004; 
+BEGIN {  unshift @INC, "../lib"; }
 use Parse::Lex;
 
 $lexer = Parse::Lex->new(qw(
@@ -9,6 +10,7 @@ $lexer = Parse::Lex->new(qw(
 			    NEWLINE \n
 			   ));
 
+#or $lexer->from(*DATA);
 $lexer->from(\*DATA);
 
 $lexer->every (sub { 

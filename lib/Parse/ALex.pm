@@ -1,4 +1,4 @@
-# Copyright (c) Philippe Verdret, 1995-1998
+# Copyright (c) Philippe Verdret, 1995-1999
 
 # Architecture:
 # Parse::Template + Parse::ALex - Abstract Lexer
@@ -7,24 +7,23 @@
 #          Lex  CLex  ...       - Concrete lexer 
 
 # Todo:
-# Parse::Lex->configure(-from => TT, -xxx => yyy)
-# represent the lexer instance by an hash
+# Parse::Lex->configure(From => TT, Xxx => yyy)
+# implement a lexer instance as a pseudo-hash
+#   and replace [$ATT_NAME] by {ATT_NAME}
 
-require 5.003;
+require 5.004;
 use integer;
 use strict qw(vars);
 use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.05';
+$Parse::ALex::VERSION = '2.07';
 use Parse::Trace;
-@Parse::ALex::ISA = qw(Parse::Trace);
-use Parse::Token;
-use Parse::Template;
-use Carp;
+@Parse::ALex::ISA = qw(Parse::Trace); # ???
 
-my $thisClass = &{sub { caller }}; # or __PACKAGE__
+use Parse::Token;	
+use Parse::Template;
 
 				# Default values
 my $trace = 0;			# if true enable the trace mode
@@ -32,13 +31,13 @@ my $hold = 0;			# if true enable data saving
 my $skip = '[ \t]+';		# strings to skip
 my $DEFAULT_STREAM = \*STDIN;	# Input Filehandle 
 my $eoi = 0;			# 1 if end of imput 
-my $DEFAULT_TOKEN = Parse::Token->new('DEFAULT', '.*'); # default token
 my $pendingToken = 0;		# 1 if there is a pending token
 my $index = -1;
+
 my %_map;			# Define a mapping between element names and numbers
 my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN, 
    $LINE, $RECORD_LENGTH, $OFFSET, $POS,
-   $EOI, $SKIP, $HOLD, $HOLD_TEXT, $THREE_PART_RE, 
+   $EOI, $SKIP, $HOLD, $HOLD_TEXT, 
    $NAME, $IN_PKG,
    $TEMPLATE, 
    $STRING_SUB, $STREAM_SUB, $HANDLES,
@@ -52,7 +51,7 @@ my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN,
     $_map{$_} = ++$index;
   } qw(STREAM FROM_STRING SUB BUFFER PENDING_TOKEN 
        LINE RECORD_LENGTH OFFSET POS
-       EOI SKIP HOLD HOLD_TEXT THREE_PART_RE 
+       EOI SKIP HOLD HOLD_TEXT 
        NAME IN_PKG
        TEMPLATE
        STRING_SUB STREAM_SUB HANDLES
@@ -64,10 +63,24 @@ my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN,
        TOKEN_LIST);
 sub _map { $_map{($_[1])} }	
 
-my $somevar = '';		# use gensym???
+my $somevar = '';		# use gensym instead???
 				# Create and instanciate a prototypical instance
-my $lexer = $thisClass->clone;	
+my $lexer = __PACKAGE__->clone;	
 sub prototype { $lexer or [] }
+
+my $TOKEN_CLASS = 'Parse::Token'; # Root class
+sub tokenClass { 
+  if (defined $_[1]) {
+    no strict qw/refs/;
+    ${"$TOKEN_CLASS" . "::PENDING_TOKEN"} = $PENDING_TOKEN; 
+    $TOKEN_CLASS = $_[1];
+  } else {
+    $_[1] 
+  }
+}
+my $DEFAULT_TOKEN = $TOKEN_CLASS->new('DEFAULT', '.*'); # default token
+$lexer->tokenClass($TOKEN_CLASS);
+
 $lexer->[$STREAM] = $DEFAULT_STREAM;
 $lexer->[$FROM_STRING] = 0; # 1 if you must analyze a string
 $lexer->[$BUFFER] = \$somevar;		# string to tokenize
@@ -80,7 +93,6 @@ $lexer->[$EOI] = $eoi;
 $lexer->[$SKIP] = $skip;	# a pattern to skip
 $lexer->[$HOLD] = $hold;	# save or not what is consumed
 $lexer->[$HOLD_TEXT] = '';	# saved string
-$lexer->[$THREE_PART_RE] = 0;	# 1 if token is defined with a three part regexp
 $lexer->[$TEMPLATE] = new Parse::Template; # code template
 
 				# Lexer code: [HEADER, BODY, FOOTER]
@@ -101,22 +113,10 @@ $lexer->[$STATE_MACHINE_CODE] = ''; # definition of the state machine
 $lexer->[$STATES] = { 'INITIAL' => \$somevar };	# state machine, define a class will be better
 $lexer->[$STACK_STATES] = [];	# stack of states, not used
 $lexer->[$TRACE] = $trace;
-$lexer->[$INIT] = 1;		# true at object creation
+$lexer->[$INIT] = 1;		# true at object creation (useful???)
 $lexer->[$TOKEN_LIST] = [];	# Tokens
 
 				# 
-my $TOKEN_CLASS = 'Parse::Token'; # Default token class
-sub tokenClass { 
-  if (defined $_[1]) {
-    no strict qw/refs/;
-    ${"$TOKEN_CLASS" . "::PENDING_TOKEN"} = $PENDING_TOKEN; 
-    $TOKEN_CLASS = $_[1];
-  } else {
-    $_[1] 
-  }
-}
-$lexer->tokenClass($TOKEN_CLASS);
-
 sub reset {			# reset all lexer's state values
   my $self = shift;
   ${$self->[$LINE]} = 0;
@@ -231,15 +231,18 @@ sub tokenList {
 				# Call of the lexer routine
 sub next { &{$_[0]->[$SUB]} }
 
-				# and some next() wrappers
+				# 
+				# next() wrappers
+				# 
 # Purpose: Analyze data in one call
 # Arguments: string or stream to analyze
 # Returns: self
-# Todo: generate a specific lexer class: Parse::Lex::Event
+# Todo: generate a specific lexer sub
 sub parse {
   my $self = shift;
   unless (defined $_[0]) {
-    carp "no data to analyze";
+    require Carp;
+    Carp::carp "no data to analyze";
   }
   $self->from($_[0]);
   my $next = $self->[$SUB];
@@ -249,11 +252,12 @@ sub parse {
 # Purpose: Analyze data in one call
 # Arguments: string or stream to analyze
 # Returns: a list of token name and text
-# Todo: generate a specific lexer
+# Todo: generate a specific lexer sub
 sub analyze {			
   my $self = shift;
   unless (defined $_[0]) {
-    carp "no data to analyze";
+    require Carp;
+    Carp::carp "no data to analyze";
   }
   $self->from($_[0]);
   my $next = $self->[$SUB];
@@ -265,28 +269,49 @@ sub analyze {
   }
   @token;
 }
-
+# Remark: not documented
+# Purpose: put the next token in a scalar reference
+# Arguments: a scalar reference
+# Returns: 1 if token isn't equal to the EOI token
+sub nextis {			
+  my $self = shift;
+  unless (@_ == 1) {
+    require Carp;
+    Carp::croak "bad argument number";
+  }
+  if (ref $_[0]) {
+    my $token = &{$self->[$SUB]}($self);
+    ${$_[0]} = $token;
+    $token == $Parse::Token::EOI ? return 0 : return 1;
+  } else {
+    require Carp;
+    Carp::croak "bad argument $_[0]";
+  }
+}
 # Purpose: execute some action on each token
 # Arguments: an anonymous sub to call on each token
 # Returns: undef
 sub every {			
   my $self = shift;
-  my $ref = ref($_[0]);
+  my $do_on = shift;
+  my $ref = ref($do_on);
   if (not $ref or $ref ne 'CODE') { 
-    croak "argument of the 'every' method must be an anonymous routine";
+    require Carp;
+    Carp::croak "argument of the 'every' method must be an anonymous routine";
   }
   my $token = &{$self->[$SUB]}($self);
   while (not $self->[$EOI]) {
-    &{$_[0]}($token);
+    &{$do_on}($token);
     $token = &{$self->[$SUB]}($self);
   }
   undef;
 }
 
+####
 # Purpose: define the data input
-# Parameters: 
-# 1. reference to a filehandle 
-# 2. a string list
+# Parameters: possibilities
+# 1. filehandle (\*FH, *FH or IO::File instance)
+# 2. list of strings
 # 3. <none> 
 # Returns:  1. returns the lexer
 #           2. returns the lexer
@@ -296,7 +321,8 @@ sub from {
   my $self = shift;
   my $debug = 0;
 				# From STREAM
-  if (ref($_[0]) eq 'GLOB' and defined fileno($_[0])) {	
+  local *X = $_[0];		
+  if (fileno(X)) {		
     $self->[$STREAM] = $_[0];
     print STDERR "From stream\n" if $debug;
 
@@ -313,7 +339,7 @@ sub from {
       # genCode()
       $self->[$FROM_STRING] = 0;
       $self->genHeader();
-      $self->genBody($self->tokenList); # if $self->[$THREE_PART_RE];
+      $self->genBody($self->tokenList); 
       $self->genFooter();
       $self->_saveHandles();
       $self->genLex();
@@ -326,20 +352,21 @@ sub from {
     $self;
   } elsif (defined $_[0]) {	# From STRING
     print STDERR "From string\n" if $debug;
-    
-    $DB::single = 1;
     if (@{$self->[$STRING_CODE]}) { # code already exists
       unless ($self->[$FROM_STRING]) {
 	print STDERR "code already exists\n" if $debug;
 	$self->[$CODE] = [@{$self->[$STRING_CODE]}];
 	$self->[$SUB] = $self->[$STRING_SUB];
 	$self->_switchHandles();
+	$self->[$FROM_STRING] = 1;
       }
     } else {
       print STDERR "STRING code generation\n" if $debug;
+      $self->[$FROM_STRING] = 1;
+
       # genCode()
       $self->genHeader();
-      $self->genBody($self->tokenList); # if $self->[$THREE_PART_RE];
+      $self->genBody($self->tokenList); 
       $self->genFooter();
       #
       $self->_saveHandles();
@@ -348,7 +375,6 @@ sub from {
       $self->[$STRING_CODE] = [@{$self->[$CODE]}]; # cache
       $self->[$STRING_SUB] = $self->[$SUB];
     }
-    $self->[$FROM_STRING] = 1;
     $self->reset;
     my $buffer = join($", @_); # Data from a list
     ${$self->[$BUFFER]} = $buffer;
@@ -463,7 +489,7 @@ sub hold {
 sub skip {			
   my $self = shift;
 
-  my $debug = 1;
+  my $debug = 0;
   if (ref $self) {		# Instance method
     if (defined($_[0]) and $_[0] ne $self->[$SKIP]) {
       print STDERR "skip value: '$_[0]'\n" if $debug;
@@ -506,8 +532,9 @@ sub new {
   my $receiver = shift;
   my $class = (ref $receiver or $receiver);
 
-  if ($class eq $thisClass) {
-    croak "can't create an instance of '$class' abstract class"
+  if ($class eq __PACKAGE__) {
+    require Carp;
+    Carp::croak "can't create an instance of '$class' abstract class"
   }
 
   my $self = $receiver->clone;
@@ -526,6 +553,18 @@ sub new {
     $self->[$TOKEN_LIST] = [@token];
   }
   $self;
+}
+
+# not documented, used in Parse::Token::
+sub lexerType {
+  my $self = shift;
+  if ($self->isa('Parse::Lex')) {
+    return 'Parse::Lex';
+  } elsif ($self->isa('Parse::CLex')) {
+    return 'Parse::CLex';
+  } else {
+    return ref $self || $self;
+  }
 }
 
 # Put or fetch a template object
@@ -562,7 +601,6 @@ sub genHeader {
   print STDERR "genHeader()\n" if $TRACE_GEN;
 				# build the template env
   $template->env(
-		 'template' => \$template,
 		 'SKIP' => $self->[$SKIP],
 		 'IS_HOLD' => $self->[$HOLD],
 		 'HOLD_TEXT' => $HOLD_TEXT,
@@ -573,9 +611,9 @@ sub genHeader {
 		); 
 
   if ($self->[$FROM_STRING]) {
-    $self->[$CODE]->[0] = $self->template->eval('HEADER_STRING');
+    $self->[$CODE]->[0] = $self->template->eval('HEADER_STRING_PART');
   } else {
-    $self->[$CODE]->[0] = $self->template->eval('HEADER_STREAM');
+    $self->[$CODE]->[0] = $self->template->eval('HEADER_STREAM_PART');
   }
 }
 # Purpose: create the lexical analyzer
@@ -586,74 +624,15 @@ sub genBody {
   my $self = shift;
   print STDERR "genBody()\n"  if $TRACE_GEN;
 				# 
-  $self->[$THREE_PART_RE] = 0;
   if ($self->[$INIT]) {		# object creation
     $self->[$INIT] = 0;		# useless
   }
-  my $fromString = $self->[$FROM_STRING]; 
-  my $template = $self->template;
-  my $sub;
+
   my $token;
   my $body = '';
-  my $tokenid = '';
-  my $regexp = '';
-  my $ppregexp = '';
-  my $tmpregexp = '';
-  my $condition = '';
   my $debug = 0;
-
-				# Todo: Define a template for each type of tokens
   while (@_) {			# list of Token instances
-    $token = shift;
-    $regexp = $token->regexp();
-    $tokenid = $self->inpkg() . '::' . $token->name();
-    $template->env('TOKEN_ID', $tokenid);
-    $condition = $self->genCondition($token->condition);
-    $template->env('CONDITION', $condition);
-
-    if (ref($regexp) eq 'ARRAY') { # Todo: define a specific class for this
-      $self->[$THREE_PART_RE] = 1;
-      if ($#{$regexp} >= 3) {
-	carp join  " " , "Warning!", $#{$regexp} + 1, 
-	"arguments in token definition";
-      }
-      $ppregexp = $tmpregexp = $template->ppregexp(${$regexp}[0]);
-      $template->env('REGEXP_START', $ppregexp);
-
-      $ppregexp = ${$regexp}[1] ? $template->ppregexp(${$regexp}[1]) : '(?:.*?)';
-      $tmpregexp .= $ppregexp;
-      $template->env('REGEXP_MIDDLE', $ppregexp);
-
-      $ppregexp = $template->ppregexp(${$regexp}[2] or ${$regexp}[0]);
-      $template->env('REGEXP_END', $ppregexp);
-      $ppregexp = "$tmpregexp$ppregexp";
-      if ($debug) {
-	print STDERR "REGEXP[$tokenid]->\t\t$ppregexp\n";
-      }
-      $template->env('REGEXP', $ppregexp);
-
-				# source of data
-      if ($fromString) {
-	$body .= $template->eval('THREE_PART_TOKEN_STRING');
-      } else {
-	$body .= $template->eval('THREE_PART_TOKEN_STREAM');
-      }
-    } else {
-      $ppregexp = $template->ppregexp($regexp);
-      if ($debug) {
-	print STDERR "REGEXP[$tokenid]->\t\t$ppregexp\n";
-      }
-      $template->env('REGEXP', $ppregexp);
-      $body .= $template->eval('SIMPLE_TOKEN');
-    }
-
-    $sub = $token->action;
-    if ($sub) {			# Token with an associated sub
-      $body .= $template->eval('ROW_FOOTER_SUB');
-      $sub = undef;		# 
-    } else {
-      $body .= $template->eval('ROW_FOOTER');
-    }
+    $body .= shift->genCode();
   }
   $self->[$CODE]->[1] = $body;
 }
@@ -661,7 +640,7 @@ sub genBody {
 sub genFooter {
   my $self = shift;
   print STDERR "genFooter()\n" if $TRACE_GEN;
-  $self->[$CODE]->[2] = $self->template->eval('FOOTER');
+  $self->[$CODE]->[2] = $self->template->eval('FOOTER_PART');
 }
 
 # Purpose: Returns code of the current lexer
@@ -708,8 +687,8 @@ sub genLex {
   my $debug = 0;
   if ($@ or $debug) {	# can be useful ;-)
     my $line = 0;
-    $stateMachine =~ s/^/sprintf("%3d", $line++)/meg; # line numbers
-    $analyzer =~ s/^/sprintf("%3d", $line++)/meg;
+    $stateMachine =~ s/^/sprintf("%3d ", $line++)/meg; # line numbers
+    $analyzer =~ s/^/sprintf("%3d ", $line++)/meg;
     print STDERR "$stateMachine$analyzer\n";
     print STDERR "$@\n";
     die "\n" if $@;
@@ -757,8 +736,8 @@ sub exclusive {
     $self->prototype->exclusive(map { $_ => 1 } @_);
   }
 }
+use constant GEN_CONDITION => 0;
 sub genCondition {
-  my $trace = 1;
   my $self = shift;
   my $specif = shift;
   return '' if $specif =~ /^ALL:/; # special condition
@@ -779,7 +758,8 @@ sub genCondition {
 	unless ($cond_item eq 'INITIAL' or 
 		defined $exclusion{$cond_item} or 
 		defined $inclusion{$cond_item}) {
-	  croak "'$cond_item' condition not defined";
+	  require Carp;
+	  Carp::croak "'$cond_item' condition not defined";
 	}
 	delete $exclusion{$cond_item};
 	delete $inclusion{$cond_item};
@@ -800,7 +780,7 @@ sub genCondition {
       $condition = "not (" . join(" or ", @tmp) . ")";
     }
   } 
-  print STDERR "genCondition(): $specif -> $condition\n" if $trace;
+  print STDERR "genCondition(): $specif -> $condition\n" if GEN_CONDITION;
   $condition ne '' ? "$condition and" : '';
 }
 sub genStateMachine { 

@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl -w
 
-require 5.004; # or use CLex.pl
+require 5.004; 
 BEGIN {  unshift @INC, "../lib"; }
 use Parse::Lex;
 print STDERR "Version $Parse::ALex::VERSION\n";

@@ -1,11 +1,10 @@
 =head1 NAME
 
-C<Parse::Token> - Classe définissant les tokens utilisés par
-Parse::Lex.pm (Beta 2.02).
+C<Parse::Token> - Définition des tokens utilisés par C<Parse::Lex>
 
 =head1 SYNOPSIS
 
-	require 5.000;
+	require 5.005;
 
 	use Parse::Lex;
 	@token = qw(
@@ -34,23 +33,22 @@ Parse::Lex.pm (Beta 2.02).
 
 Le package C<Token> permet de définir les tokens utilisés par
 C<Parse::Lex> ou par C<Parse::CLex>. La méthode C<Lex::new()> du
-package C<Parse::Lex> crée indirectement un objet de type C<Token> par
-token à reconnaître.  Les méthodes C<next()> ou C<isnext()> du package
-C<Token> permettent d'interfacer l'analyseur lexical avec un analyseur
-syntaxique de type récursif descendant. Pour un interfaçage avec byacc
-voir le package C<Parse::YYLex>.
+package C<Parse::Lex> crée indirectement une instance C<Parse::Token>
+par token à reconnaître.  Les méthodes C<next()> ou C<isnext()> du
+package C<Token> permettent d'interfacer l'analyseur lexical avec un
+analyseur syntaxique de type récursif descendant. Pour un interfaçage
+avec C<byacc> voir le package C<Parse::YYLex>.
 
-Le package C<Parse::Token> n'est pas destiné à être directement
-utilisé.  L'inclusion de ce package se fait par le biais d'un
-C<use Parse::Lex>.
+L'inclusion de ce package est faite indirectement par un C<use
+Parse::Lex>.
 
-=head2 Méthodes
+=head1 Méthodes
 
 =over 4
 
 =item action
 
-Retourne la fonction anonyme définie dans l'objet C<Parse::Token>.
+Retourne la fonction anonyme définie dans l'objet C<Parse::Token>.	
 
 =item factory LISTE
 
@@ -87,7 +85,7 @@ suivante :
 	  $symbol{"\L$name"} = [${$name}, ''];
 	}
 
-C<${$name}> est l'objet Token.
+C<${$name}> est l'objet C<Parse::Token>.
 
 Lors de la phase d'analyse lexicale on pourra utiliser les tokens de
 la manière suivante :
@@ -172,7 +170,7 @@ la chaîne. Remarquez le quadruplement du contre-oblique.
 Voici une variante de l'exemple précédent qui utilise l'option C<s>
 pour inclure la nouvelle-ligne dans les caractères reconnus par "C<.>" :
 
-	  qw(STRING), [qw(" (?s)(?:[^"\\\\]+|\\\\.)* ")],
+	  qw(STRING), [qw(" (?s:[^"\\\\]+|\\\\.)* ")],
 
 (Remarques. Il est possible d'écrire des expressions régulières plus
 performantes en terme de temps d'exécution, mais ce n'est pas notre
@@ -232,6 +230,8 @@ lexicale.
 C<OUTPUT> peut être un nom de fichier ou une référence à un
 filehandle vers laquelle la trace va être dirigée.
 
+=back
+
 =head1 GESTION DES ERREURS
 
 Pour traiter les cas de non reconnaissance de token vous pouvez
@@ -239,6 +239,28 @@ définir un token spécifique en fin de la liste des tokens composant
 notre analyseur lexical.  Si la recherche de ce token réussie il est
 alors possible d'appeler une fonction dévolue au traitement des
 erreurs.
+
+=head1 EVOLUTIONS
+
+Des sous-classes de la classe C<Parse::Token> sont en cours de
+définitions. Elles permettrons de reconnaître des structures
+particulières comme par exemple les chaînes de caractères entre
+guillemets, les commentaires C, etc. Voici les sous-classes que j'ai
+l'intention de créer :
+
+C<Parse::Token::Simple> : pour définir les tokens 'ordinaires'.
+
+C<Parse::Token::Multiline> : pour définir des tokens pouvant
+nécessiter la lecture de données complémentaires.
+
+C<Parse::Token::Embedded> : pour reconnaître des structures
+imbriquées, tels que des expressions parenthésées.
+
+C<Parse::Token::Delimited> : pour reconnaître, par exemple, des
+chaînes de caractères entre guillemets.
+
+Le nom de ces classes a valeur de proposition. Vous pouvez me faire
+des suggestions.
 
 =head1 AUTEUR
 
@@ -258,7 +280,7 @@ Mason, T. & Brown, D. - Lex & Yacc. O'Reilly & Associates, Inc. 1990.
 
 =head1 COPYRIGHT
 
-Copyright (c) 1995-1998 Philippe Verdret. All rights reserved.
+Copyright (c) 1995-1999 Philippe Verdret. All rights reserved.
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

@@ -1,6 +1,7 @@
 #!/usr/local/bin/perl -w
 require 5.000;
 
+use lib "../lib";
 use Parse::CLex;
 
 print STDERR "Version $Parse::ALex::VERSION\n";
