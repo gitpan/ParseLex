@@ -238,15 +238,24 @@ Pour traiter les cas de non reconnaissance de token vous pouvez
 définir un token spécifique en fin de la liste des tokens composant
 notre analyseur lexical.  Si la recherche de ce token réussie il est
 alors possible d'appeler une fonction dévolue au traitement des
-erreurs.
+erreurs :
+
+     qw(ERROR  (?s:.*)), sub {
+       print STDERR "ERROR: buffer content->", $_[0]->lexer->buffer, "<-\n";
+       die qq!can\'t analyze: "$_[1]"!;
+     }
+
 
 =head1 Sous-classes de Parse::Token
 
 Des sous-classes de la classe C<Parse::Token> sont en cours de
-définitions. Elles permettent ou permettrons de reconnaître des
+définition. Elles permettent ou permettrons de reconnaître des
 structures particulières comme, par exemple, les chaînes de caractères
 entre guillemets, les commentaires C, etc. Voici les sous-classes que
 j'ai l'intention de créer :
+
+C<Parse::Token::Action> : permet d'insérer des expressions Perl entre
+deux tokens de l'analyseur lexical.
 
 C<Parse::Token::Simple> : pour définir les tokens qui ne nécessitent
 pas le lecture de nouvelles données.
@@ -263,6 +272,74 @@ chaînes de caractères entre guillemets.
 Le nom de ces classes a valeur de proposition. Vous pouvez me faire
 des suggestions.
 
+=head2 Parse::Token::Action 
+
+Les tokens de la classe C<Parse::Token::Action> permettent d'insérer
+des expressions Perl quelconque au sein d'un analyseur lexical.  Une
+expression peut être utilisée par exemple pour imprimer des variables
+internes à l'analyseur :
+
+=over 
+
+=item *
+
+C<$LEX_BUFFER> : contenu du buffer à analyser
+
+=item *
+
+C<$LEX_LENGTH> : longueur de la chaîne de caractères en cours d'analyse
+
+=item *
+
+C<$LEX_RECORD> : numéro de l'enregistrement en cours d'analyse
+
+=item *
+
+C<$LEX_OFFSET> : position en nombre de caractères depuis le début de
+l'analyse 
+
+=item *
+
+C<$LEX_POS> : position en nombre de caractères indiquant l'avancée de
+l'analyse
+
+=back
+
+Le constructeur de la classe accepte les attributs suivants : 
+
+=over 
+
+=item *
+
+C<Name> : le nom du token
+
+=item * 
+
+C<Expr> : une expression Perl 
+
+=back
+
+Exemple :
+
+	$ACTION = new Parse::Token::Action(
+				      Name => 'ACTION',
+				      Expr => q!print "LEX_POS: $LEX_POS\n" .
+				      "LEX_BUFFER: $LEX_BUFFER\n" .
+				      "LEX_LENGTH: $LEX_LENGTH\n" .
+				      "LEX_RECORD: $LEX_RECORD\n" .
+				      "LEX_OFFSET: $LEX_OFFSET\n" 
+				      ;!,
+				     );
+	$lexer = Parse::Lex->new(
+		     $ACTION,
+		     qw(LETTER [a-z]),
+		     qw(ERROR  (?s:.*)), sub {
+		       print STDERR "ERROR buffer content:->",
+			 $_[0]->lexer->buffer, "<-\n";
+		         die qq!can\'t analyze: "$_[1]"!;
+		     }
+		    );
+
 =head2 Parse::Token::Simple
 
 =head2 Parse::Token::Multiline
@@ -274,12 +351,12 @@ Exemples.
       ---------------------------------------------------------
 	Début	Fin	Littéralisation
       ---------------------------------------------------------
-	'	'	''		Citation
-	"	"	""		Citation
-	"	"	\		Citation
+	'	'	''		
+	"	"	""		
+	"	"	\		
       ---------------------------------------------------------
 
-=head2 Parse::Token::Delimited
+=head2 Parse::Token::Delimited  - Non définie
 
 Exemples.
 
@@ -295,7 +372,7 @@ Exemples.
       ---------------------------------------------------------
 
 
-=head2 Parse::Token::Nested
+=head2 Parse::Token::Nested - Non définie
 
 Exemples.
 
@@ -316,6 +393,9 @@ Philippe Verdret
 
 La version 2.0 doit beaucoup aux suggestions de Vladimir Alexiev.
 Ocrat a largement contribué à l'amélioration de cette documentation.
+Merci également aux nombreuses personnes qui m'ont fait des remarques
+et parfois envoyés des corrections de bugs (Stefan Becker, Rashid
+Karimov, Larry W. Virden ...).
 
 =head1 REFERENCES
 

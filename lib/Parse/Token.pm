@@ -12,12 +12,23 @@ use Parse::Trace;
 use vars qw($AUTOLOAD $trace $PENDING_TOKEN $EOI);
 $trace = 0;
 
-# todo: use a pseudo-hash
-my(
-   $STATUS, $TEXT, $NAME, $CONDITION, 
-   $REGEXP, $SUB, $DECORATION, $LEXER, 
-   $TEMPLATE, $TRACE, $IN_PKG
-   ) = (0..10);
+# other possibilities: dynamic variables, pseudo-hash, constants (see The Perl Journal Spring 99)
+my %_map;
+my @attributes = qw(STATUS TEXT NAME CONDITION 
+		    REGEXP SUB DECORATION LEXER EXPRESSION
+		    TEMPLATE TRACE IN_PKG);
+my($STATUS, $TEXT, $NAME, $CONDITION, 
+   $REGEXP, $ACTION, $DECORATION, $LEXER, $EXPRESSION,
+   $TEMPLATE, $TRACE, $IN_PKG) = @_map{@attributes} = (0..$#attributes);
+sub _map { 
+  shift;
+  if (@_) {
+    wantarray ? @_map{@_} : $_map{$_[0]}
+  } else {
+    @attributes;
+  }
+}
+
 $EOI = Parse::Token->new('EOI');
 
 #  new()
@@ -33,13 +44,15 @@ sub new {
   $self->[$STATUS] = 0;		# object status
   $self->[$TEXT] = '';		# recognized text
 
-  ($self->[$CONDITION], 	# associated conditions		
+  (
+   $self->[$CONDITION], 	# associated conditions		
    $self->[$NAME]		# symbolic name
   ) = $self->_parseName($_[0]);
 
   $self->[$REGEXP] = $_[1];	# regexp, can be an array reference
-  $self->[$SUB] = $_[2];	# associated sub
-  $self->[$LEXER] = $_[3];	# lexer object
+  $self->[$ACTION] = $_[2];	# associated sub
+  $self->[$LEXER] = $_[3];	# lexer instance
+  $self->[$EXPRESSION] = $_[4];	# for an action token
   $self->[$IN_PKG] = '';	# defined in this package
   $self->[$DECORATION] = {};	# token decoration
   $self->[$TEMPLATE] = {};	# associated template
@@ -53,7 +66,7 @@ sub new {
 sub exportTo {
   my $self = shift;
   my $inpkg = $self->inpkg;
-  if (not defined $inpkg) {
+  unless (defined $inpkg) {
     $inpkg = (caller(0))[0];
     $self->inpkg($inpkg);
   }
@@ -75,7 +88,7 @@ sub factory {
 
   unless (defined($_[0])) {
     require Carp;
-    Carp::croak "arguments must be a list of token specifications";
+    Carp::croak "arguments of the factory() method must be a list of token specifications";
   }
 
   my $sub;
@@ -145,6 +158,14 @@ sub condition {
     $self->[$CONDITION] = shift;
   } else {
     $self->[$CONDITION];
+  }
+}
+sub expression {
+  my $self = shift;
+  if (@_) {
+    $self->[$EXPRESSION] = shift;
+  } else {
+    $self->[$EXPRESSION];
   }
 }
 sub AUTOLOAD {		    
@@ -220,7 +241,7 @@ sub regexp { $_[0]->[$REGEXP] }	# regexp
 # Purpose:
 # Arguments:
 # Returns:
-sub action   { $_[0]->[$SUB] }	# anonymous function
+sub action   { $_[0]->[$ACTION] } # anonymous function
 
 # lexer(EXP)
 # lexer
@@ -293,6 +314,69 @@ sub isnext {
   }
 }
 
+package Parse::Token::Action;	# experimental feature - not documented
+use Parse::Template;
+@Parse::Token::Action::ISA = qw(Parse::Token Parse::Trace);
+
+use vars qw(%TEMPLATE $template);
+%TEMPLATE = 
+(EXPRESSION_PART => q!
+ %%$CONDITION%%
+ %%$EXPRESSION%%
+ !
+);
+$template = new Parse::Template(%TEMPLATE);
+sub new {
+  my $receiver = shift;
+  my ($name, $expression) = $receiver->_parse(@_);
+  my $token = $receiver->SUPER::new($name, '', '', '', $expression);
+  $token->template($template);	
+  $token;
+}
+sub _parse {
+  my $self = shift;
+  unless (@_ >= 2) {
+    require  Carp;
+    Carp::croak "bad argument number (@_)";
+  }
+  my ($key, $value);
+  my ($name, $expression);
+  my $escape = '';
+  while (@_ >= 2) {
+    ($key, $value) = (shift, shift);
+    if ($key =~ /-?[Nn]ame/) {
+      $name = $value;
+    } elsif ($key =~ /^-?[Ee]xpr$/) {
+      $expression = $value;
+    } else {
+      last;
+    }
+  }
+  ($name, $expression);
+}
+sub genCode {
+  my $self = shift;
+
+  my $lexer = $self->lexer;
+  my $tokenid = $lexer->inpkg() . '::' . $self->name();
+  my $template = $self->template;
+  my $condition = $lexer->genCondition($self->condition);
+  my $expression = $self->expression;
+
+  $template->env(
+		 CONDITION => $condition,
+		 EXPRESSION => $expression,
+		); 
+  my $code;
+  eval {
+    $code = $template->eval('EXPRESSION_PART');
+  };
+  if ($@) {
+    require Carp;
+    Carp::croak "$@";
+  }
+  $code;
+}
 package Parse::Token::Simple;
 use Parse::Trace;
 use Parse::Template;
@@ -319,10 +403,10 @@ $TEMPLATE{'LEX_TRACE_PART'} = q!
      }
 !;
 $TEMPLATE{'LEX_FOOTER_WITH_SUB_PART'} = q!
-    $%%"$TOKEN_ID"%%->setText($content);
-    $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%"$TOKEN_ID"%%;
-    $content = &{$%%"$TOKEN_ID"%%->action}($LEX_TOKEN, $content);
-    $%%"$TOKEN_ID"%%->setText($content);
+    $%%$TOKEN_ID%%->setText($content);
+    $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%$TOKEN_ID%%;
+    $content = &{$%%$TOKEN_ID%%->action}($LEX_TOKEN, $content);
+    $%%$TOKEN_ID%%->setText($content);
     $LEX_TOKEN = $self->[%%$PENDING_TOKEN%%]; # if tokenis in sub
     %%$WITH_TRACE ? LEX_FOOTER_WITH_SUB_TRACE_PART() : ''%%
     last CASE;
@@ -338,12 +422,11 @@ $TEMPLATE{'LEX_FOOTER_WITH_SUB_TRACE_PART'} = q!
 	}
 !;
 $TEMPLATE{'LEX_FOOTER_PART'} = q!
-    $%%"$TOKEN_ID"%%->setText($content);
-    $LEX_TOKEN = $%%"$TOKEN_ID"%%;
+    $%%$TOKEN_ID%%->setText($content);
+    $LEX_TOKEN = $%%$TOKEN_ID%%;
     last CASE;
    };
 !;
-
 				# For the CLex class
 $TEMPLATE{'CLEX_HEADER_PART'} = q!
    %%$CONDITION%%
@@ -406,12 +489,8 @@ sub genCode {
   my $condition = $lexer->genCondition($self->condition);
   my $with_sub = defined $self->action ? 1 : 0;
 
-  my $SKIP = $lexer->_map('SKIP');
-  my $HOLD = $lexer->_map('HOLD');
-  my $TRACE = $lexer->_map('TRACE');
-  my $EOI = $lexer->_map('EOI');
-  my $HOLD_TEXT = $lexer->_map('HOLD_TEXT');
-  my $PENDING_TOKEN = $lexer->_map('PENDING_TOKEN');
+  my($SKIP, $HOLD, $TRACE, $EOI, $HOLD_TEXT,  $PENDING_TOKEN) =
+    $lexer->_map('SKIP', 'HOLD', 'TRACE', 'EOI', 'HOLD_TEXT', 'PENDING_TOKEN');
 
   $template->env(
 		 #'template' => \$template,
@@ -446,7 +525,7 @@ sub genCode {
   $code;
 }
 
-package Parse::Token::Multiline;
+package Parse::Token::Multiline; # Parse::Token::Complex ???
 use Parse::Trace;
 @Parse::Token::Multiline::ISA = qw(Parse::Token Parse::Trace);
 
@@ -471,55 +550,55 @@ $TEMPLATE{'LEX_HEADER_STRING_PART'} = q!
 $TEMPLATE{'LEX_HEADER_STREAM_PART'} = q@
     %%$CONDITION%%
     $LEX_BUFFER =~ /\G(?:%%"$REGEXP_START"%%)/cg and do {
-      my $beforepos = $LEX_POS;
-      my $initpos = pos($LEX_BUFFER);
-      my $tmp = substr($LEX_BUFFER, $initpos); 
+      my $before_pos = $LEX_POS;
+      my $start_pos = pos($LEX_BUFFER);
+      my $tmp = substr($LEX_BUFFER, $start_pos); 
       my $line_read = 0;
       # don't use \G 
-      #print STDERR "before: $LEX_POS - initpos: $initpos - tmp: $tmp\n";
+      #print STDERR "before: $LEX_POS - initpos: $start_pos - tmp: $tmp\n";
       unless ($tmp =~ /^(?:%%"$REGEXP_MIDDLE$REGEXP_END"%%)/g) {
-	my $text = '';
+	my $line = '';
 	do {
 	  while (1) {
-	    $text = <$LEX_FH>;
+	    $line = <$LEX_FH>;
 	    $line_read = 1;
-	    if (not defined($text)) { # 
+	    unless (defined($line)) { # 
 	      $self->[%%$EOI%%] = 1;
 	      $LEX_TOKEN = $Parse::Token::EOI;
 	      require Carp;
-	      Carp::croak "unable to find end of token ", $%%"$TOKEN_ID"%%->name, "";
+	      Carp::croak "unable to find end of token ", $%%$TOKEN_ID%%->name, "";
 	    }
 	    $LEX_RECORD++;
-	    $tmp .= $text;
-	    last if $text =~ /%%$REGEXP_END%%/;
+	    $tmp .= $line;
+	    last if $line =~ /%%$REGEXP_END%%/;
 	  }
 	} until ($tmp =~ /^(?:%%"$REGEXP_MIDDLE$REGEXP_END"%%)/g); # don't forget /g
       }
-      $LEX_POS = $initpos + pos($tmp);
+      $LEX_POS = $start_pos + pos($tmp);
       $LEX_OFFSET += $LEX_POS;
       if ($line_read) {
-	$LEX_BUFFER = substr($LEX_BUFFER, $beforepos, $initpos) . $tmp;
+	$LEX_BUFFER = substr($LEX_BUFFER, 0, $start_pos) . $tmp;
 	$LEX_LENGTH = CORE::length($LEX_BUFFER); 
-      }
+      } 
+      $content = substr($LEX_BUFFER, $before_pos, $LEX_POS - $before_pos);
       pos($LEX_BUFFER) = $LEX_POS;
-      $content = substr($LEX_BUFFER, $beforepos, $LEX_POS - $beforepos);
       #print STDERR "LEX_BUFFER: $LEX_BUFFER\n";
-      #print STDERR "pos: $beforepos - length: ", $LEX_POS -$beforepos, " - content->$content<-\n";
+      #print STDERR "pos: $before_pos - length: ", $LEX_POS -$before_pos, " - content->$content<-\n";
       %%$WITH_TRACE ? LEX_TOKEN_TRACE_PART() : '' %%
       %%$WITH_SUB ? LEX_FOOTER_WITH_SUB_PART() : LEX_FOOTER_PART() %%
 @;
 $TEMPLATE{'LEX_TOKEN_TRACE_PART'} = q!
      if ($self->[%%$TRACE%%]) { # Trace
        my $tmp = '%%$REGEXP%%';
-       my $trace = "Token read (" . $%%"$TOKEN_ID"%%->name . ", $tmp): $content"; 
+       my $trace = "Token read (" . $%%$TOKEN_ID%%->name . ", $tmp): $content"; 
         $self->context($trace);
      }
 !;
 $TEMPLATE{'LEX_FOOTER_WITH_SUB_PART'} = q!
-    $%%"$TOKEN_ID"%%->setText($content);
-    $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%"$TOKEN_ID"%%;
-    $content = &{$%%"$TOKEN_ID"%%->action}($LEX_TOKEN, $content);
-    $%%"$TOKEN_ID"%%->setText($content);
+    $%%$TOKEN_ID%%->setText($content);
+    $self->[%%$PENDING_TOKEN%%] = $LEX_TOKEN = $%%$TOKEN_ID%%;
+    $content = &{$%%$TOKEN_ID%%->action}($LEX_TOKEN, $content);
+    $%%$TOKEN_ID%%->setText($content);
     $LEX_TOKEN = $self->[%%$PENDING_TOKEN%%]; # if tokenis in sub
      %%$WITH_TRACE ? LEX_FOOTER_WITH_SUB_TRACE_PART() : ''%%
     last CASE;
@@ -535,8 +614,8 @@ $TEMPLATE{'LEX_FOOTER_WITH_SUB_TRACE_PART'} = q!
 	}
 !;
 $TEMPLATE{'LEX_FOOTER_PART'} = q!
-    $%%"$TOKEN_ID"%%->setText($content);
-    $LEX_TOKEN = $%%"$TOKEN_ID"%%;
+    $%%$TOKEN_ID%%->setText($content);
+    $LEX_TOKEN = $%%$TOKEN_ID%%;
     last CASE;
    };
 !;
@@ -565,7 +644,7 @@ $TEMPLATE{'CLEX_HEADER_STREAM_PART'} = q!
      do {
        until ($string =~ /%%$REGEXP_END%%/) {
 	 $string = <$LEX_FH>;
-	 if (not defined($string)) { # 
+	 unless (defined($string)) { # 
            $self->[%%$EOI%%] = 1;
            $LEX_TOKEN = $Parse::Token::EOI;
 	   require Carp;
@@ -634,15 +713,10 @@ sub genCode {
   my $template = $self->template;
   my $condition = $lexer->genCondition($self->condition);
   
-  my $FROM_STRING = $lexer->_map('FROM_STRING');
-  my $SKIP = $lexer->_map('SKIP');
-  my $HOLD = $lexer->_map('HOLD');
-  my $TRACE = $lexer->_map('TRACE');
-  my $EOI = $lexer->_map('EOI');
-  my $PENDING_TOKEN = $lexer->_map('PENDING_TOKEN');
-  my $HOLD_TEXT = $lexer->_map('HOLD_TEXT');
-  my $WITH_SUB = $self->action;
+  my($FROM_STRING, $SKIP, $HOLD, $TRACE, $EOI, $HOLD_TEXT,  $PENDING_TOKEN) =
+    $lexer->_map('FROM_STRING', 'SKIP', 'HOLD', 'TRACE', 'EOI', 'HOLD_TEXT', 'PENDING_TOKEN');
 
+  my $with_sub = defined $self->action ? 1 : 0;
   $template->env(
 		 #'template' => \$template,
 		 'CONDITION', $condition,
@@ -651,7 +725,7 @@ sub genCode {
 		 'FROM_STRING' => $lexer->[$FROM_STRING],
 		 'IS_HOLD' => $lexer->[$HOLD],
 		 'WITH_TRACE' => $lexer->[$TRACE],
-		 'WITH_SUB' => $WITH_SUB,
+		 'WITH_SUB' => $with_sub,
 		 'HOLD_TEXT' => $HOLD_TEXT,
 		 'EOI' => $EOI,
 		 'TRACE' => $TRACE,
@@ -769,13 +843,19 @@ use Parse::Trace;
 # [qw(<!-- (?:.*?) -->)]
 # [qw(<? (?:.*?) ?>)]
 sub new {
-  die "not yet implemented";
+  die "Sorry! Not yet implemented";
 }
 
-#package Parse::Token::Nested;
-# Should analyze strings like:
+package Parse::Token::Nested;
+use Parse::Trace;
+@Parse::Token::Nested::ISA = qw(Parse::Token::Nested Parse::Trace);
+
+# Examples:
 # (+ (* 3 4) 4)
 # 
+sub new {
+  die "Sorry! Not yet implemented";
+}
 
 1;
 __END__

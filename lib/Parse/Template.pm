@@ -181,6 +181,7 @@ sub eval {
 }
 1;
 __END__
+
 =head1 NAME
 
 Parse::Template - Processor for templates containing Perl expressions (0.31)
@@ -230,13 +231,13 @@ parts to be completed.
 Data used in generating missing parts can come from the environment
 or can be the result of queries performed by the expressions.
 
-             Template
+             TEMPLATE
           Text + Perl Expression 
 		|
-		+-----> Evaluation ----> Text(document, program)
+		+-----> Evaluation ----> Text(document or program)
 		|	
 	   Subs + Data structures
-            Environment
+            ENVIRONMENT
 
 With the class C<Parse::Template> a template can be decomposed into parts.
 These parts are defined by a hash passed as an argument to the C<new()> method:
@@ -449,8 +450,7 @@ expressions:
 
 
 With a final transformation it is possible to use a 
-method-call notation
-to proceed with the generation:
+method-call notation to proceed with the generation:
 
  $ELT_CONTENT = q!%%shift(@_); "<$part>" . join('', @_) . "</$part>"%%!;
 
@@ -474,8 +474,7 @@ to receive your comments and suggestions.
 =head1 BUG
 
 Instances are not destroyed.  Therefore, do not use this class 
-to
-create a large number of instances.
+to create a large number of instances.
 
 =head1 AUTHOR
 

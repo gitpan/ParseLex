@@ -8,9 +8,8 @@
 
 # Todo:
 # Parse::Lex->configure(From => TT, Xxx => yyy)
-# implement a lexer instance as a pseudo-hash
-# use of constant is another possibility (see The Perl Journal Spring 99)
-#   and replace [$ATT_NAME] by {ATT_NAME}
+# other possibilities for implementing Lexer's instances:
+#   pseudo-hash, constants (see The Perl Journal Spring 99)
 
 require 5.004;
 use integer;
@@ -19,7 +18,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.09';
+$Parse::ALex::VERSION = '2.10';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace); 
 
@@ -33,12 +32,20 @@ my $skip = '[ \t]+';		# strings to skip
 my $DEFAULT_STREAM = \*STDIN;	# Input Filehandle 
 my $eoi = 0;			# 1 if end of imput 
 my $pendingToken = 0;		# 1 if there is a pending token
-my $index = -1;
 
-#use constant STREAM => 0;
-#use constant EOI => 9;
-
-my %_map;			# Define a mapping between element names and numbers
+my %_map;			# Define a mapping between element names and numbers, sort of enum
+my @attributes = qw(STREAM FROM_STRING SUB BUFFER PENDING_TOKEN 
+		    LINE RECORD_LENGTH OFFSET POS
+		    EOI SKIP HOLD HOLD_TEXT 
+		    NAME IN_PKG
+		    TEMPLATE
+		    STRING_SUB STREAM_SUB HANDLES
+		    STRING_CODE STREAM_CODE CODE
+		    CODE_STATE_MACHINE 
+		    STATES STACK_STATES
+		    EXCLUSIVE_COND INCLUSIVE_COND
+		    TRACE INIT 
+		    TOKEN_LIST);
 my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN, 
    $LINE, $RECORD_LENGTH, $OFFSET, $POS,
    $EOI, $SKIP, $HOLD, $HOLD_TEXT, 
@@ -51,21 +58,15 @@ my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN,
    $EXCLUSIVE_COND, $INCLUSIVE_COND,
    $TRACE, $INIT, 
    $TOKEN_LIST
-  ) = map {
-    $_map{$_} = ++$index;
-  } qw(STREAM FROM_STRING SUB BUFFER PENDING_TOKEN 
-       LINE RECORD_LENGTH OFFSET POS
-       EOI SKIP HOLD HOLD_TEXT 
-       NAME IN_PKG
-       TEMPLATE
-       STRING_SUB STREAM_SUB HANDLES
-       STRING_CODE STREAM_CODE CODE
-       CODE_STATE_MACHINE 
-       STATES STACK_STATES
-       EXCLUSIVE_COND INCLUSIVE_COND
-       TRACE INIT 
-       TOKEN_LIST);
-sub _map { $_map{($_[1])} }	
+) = @_map{@attributes} = (0..$#attributes);
+sub _map { 
+  shift;
+  if (@_) {
+    wantarray ? @_map{@_} : $_map{$_[0]};
+  } else {
+    @attributes;
+  }
+}
 
 my $somevar = '';		# use gensym instead???
 				# Create and instanciate a prototypical instance
@@ -251,11 +252,14 @@ sub parse {
   $self->from($_[0]);
   my $next = $self->[$SUB];
   &{$next}($self) until $self->[$EOI]; 
+  # or:
+  #  local *next = $self->[$SUB];
+  #  &next($self) until $self->[$EOI]; 
   $self;
 }
 # Purpose: Analyze data in one call
 # Arguments: string or stream to analyze
-# Returns: a list of token name and text
+# Returns: list of token name and token text
 # Todo: generate a specific lexer sub
 sub analyze {			
   my $self = shift;

@@ -6,7 +6,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::CLex;
-$Parse::Lex::VERSION = $Parse::ALex::VERSION;
+$Parse::CLex::VERSION = $Parse::ALex::VERSION;
 
 use Parse::ALex;
 @Parse::CLex::ISA = qw(Parse::ALex);

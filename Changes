@@ -1,6 +1,12 @@
+MODIFICATIONS SINCE VERSION 2.09 - 11/05/99
+
+o Corrected bugs in handling of mutiline tokens
+  (patch of Rashid Karimov <rashidk@home.net>)
+
 MODIFICATIONS SINCE VERSION 2.08 - 08/04/99
 
 o New version of Parse::Template
+
 o Corrected bug in from() method 
 
 MODIFICATIONS SINCE VERSION 2.07 - 10/02/1999
