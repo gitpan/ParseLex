@@ -1,12 +1,12 @@
 #!/usr/local/bin/perl -w
 
-require 5.004; # or use CLex.pl
+require 5;
 
 BEGIN {		
   push(@INC,  ("$ENV{'HOME'}/lib/perl5")); # or PERL5LIB
 }
 
-use Parse::Lex;
+use Parse::CLex;
 print STDERR "Version $Parse::Lex::VERSION\n";
 
 @token = (
@@ -23,8 +23,8 @@ print STDERR "Version $Parse::Lex::VERSION\n";
 	  }
 	 );
 
-Parse::Lex->trace;
-$lexer = Parse::Lex->new(@token);
+Parse::CLex->trace;
+$lexer = Parse::CLex->new(@token);
 
 $lexer->from(\*DATA);
 print "Tokenization of DATA:\n";

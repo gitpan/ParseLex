@@ -1,12 +1,10 @@
 =head1 NAME
 
-C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.15).
+C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.16).
 
 =head1 SYNOPSIS
 
-	#!/usr/local/bin/perl
-
-	require 5.000;
+	require 5.004;
 
 	use Parse::Lex;
 	@token = (
@@ -49,8 +47,23 @@ C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.15).
 =head1 DESCRIPTION
 
 La classe C<Parse::Lex> permet de créer des analyseurs lexicaux.  Un
-analyseur lexical est spécifié au moyen d'un liste de lexèmes passée
-en argument à la méthode C<new> de la classe C<Parse::Lex>.
+analyseur lexical est spécifié au moyen d'un liste de lexèmes (token)
+passée en argument à la méthode C<new> de la classe C<Parse::Lex>.
+
+C<Parse::Lex> ne fonctionne qu'avec perl 5.004. Si votre version est
+antérieure, utilisez la sous-class C<Parse::CLex>.
+
+Les analyseurs générés par ces deux classes exploitent des stratégies
+d'analyse différentes :
+
+=item 1. C<Parse::Lex> utilise C<pos()>, associé à "\\G" pour
+effectuer l'analyse,
+
+=item 2. C<Parse::CLex> effectue une analyse avec consommation des
+tokens reconnus.
+
+Attention ! Les analyseurs de la classe C<Parse::CLex> ne permettent
+pas d'utiliser des expressions régulières avec ancrage.
 
 Les lexèmes sont des objets de la classe C<Parse::Token>, livré
 avec C<Parse::Lex>. La définition d'un lexème comporte ordinairement
@@ -105,16 +118,16 @@ Pour segmenter la chaîne "1+2" on peut par exemple écrire :
 	$lexer->from("1+2");
 	$lexer->every (sub { 
 	  print $_[0]->name, "\t";
-	  print $_[0]->get, "\n";
+	  print $_[0]->getstring, "\n";
 	});
 
 Le premier argument de la fonction anonyme est l'objet Token reconnu.
 
 =item from EXPR
 
-C<from> permet d'indiquer la source des données à analyser.  L'argument
-de cette méthode est une référence à un filehandle ou une liste de
-chaînes de caractères. Exemples :
+C<from> permet d'indiquer la source des données à analyser.
+L'argument de cette méthode peut être une référence à un filehandle ou
+une liste de chaînes de caractères. Exemples :
 
 	$lexer->from(\*DATA);
 	$lexer->from('les données à analyser');
@@ -124,10 +137,6 @@ chaînes de caractères. Exemples :
 Si la conservation des chaînes consommées est activée, C<flush>
 retourne et vide le buffer contenant les chaînes de caractères
 reconnues jusqu'ici.
-
-=item getbuffer
-
-Retourne le contenu du buffer interne à l'analyseur lexical.
 
 =item hold EXPR
 
@@ -159,9 +168,16 @@ C<Parse::Token> est créé.
 
 L'analyseur lexical construit par C<new> cherche tour à tour à apparier
 chaque expression régulière avec le début du flot de données à
-analyser. L'ordre examen des expressions régulières est fixé par
+analyser. L'ordre examen des expressions régulières est donné par
 l'ordre dans lequel elles sont passées en argument à la méthode
 C<new>.
+
+C<Parse::Lex> peut reconnaître des lexèmes disposés sur plusieurs
+enregistrements. Si le motif du début est trouvé, l'analyseur va en
+chercher la fin, et si besoin est, lire de nouveaux
+enregistrements. Attention, il n'y a pas de rebroussement en cas
+d'échec.
+
 
 =item newset
 
@@ -203,20 +219,34 @@ la manière suivante :
 Ce qui permet d'indiquer que tout symbole dont le type est inconnu est
 une variable.
 
+=item offset
+
+Retourne le nombre de caractères déjà consommé depuis le début du flot
+de données analysé.
+
+=item pos EXPR
+
+=item pos
+
+C<pos EXPR> fixe la position de début du prochain token à reconnaître
+dans l'enregistrement courant. C<pos> Retourne le nombre de caractères
+déjà consommé dans l'enregistrement courant.
+
 =item readline
 
 Effectue la lecture des données sur l'entrée spécifiée par la
 méthode C<from>. Retourne le résultat de la lecture.
 
+=item recordno
+
+Retourne le numéro de l'enregistrement courant. Retourne toujours 1 si
+on analyse une chaîne de caractères. La méthode readline() incrémente ce
+numéro.
+
 =item reset
 
 Vide le buffer interne à l'analyseur lexical et efface tout token déjà
 reconnu.
-
-=item setbuffer EXPR
-
-La valeur de C<EXPR> est placée dans le buffer interne à l'analyseur
-lexical.
 
 =item skip EXPR
 
@@ -226,11 +256,14 @@ C<EXPR> est une expression régulière définissant le séparateur de
 lexème (par défaut C<[ \t]+>). Retourne ce séparateur si C<EXPR> est
 omis. Peut être utilisée comme méthode de classe.
 
+Attention ! Le changement du motif à "sauter" provoque une
+recompilation de l'analyseur lexical.
+
 =item token
 
 Retourne l'objet correspondant au dernier lexème reconnu. En l'absence
 de token lu, retourne un token spécial dont le nom est C<default
-token>.
+token.
 
 =item tokenis TOKEN
 
@@ -242,9 +275,8 @@ l'intérieur de la fonction anonyme associée à ce lexème.
 =item trace 
 
 Méthode de classe qui active le mode trace.  L'activation du mode
-trace doit avoir avant lieu avant la création de l'analyseur
-lexical. Le mode peut être ensuite désactivé par un nouvel appel de la
-méthode.
+trace doit avoir lieu avant la création de l'analyseur lexical. Le
+mode peut être ensuite désactivé par un nouvel appel de la méthode.
 
 C<OUTPUT> peut être un nom de fichier ou une référence à un
 filehandle vers laquelle la trace va être dirigée.
@@ -256,10 +288,13 @@ de la classe C<Parse::Lex>.
 
 every.pl - Utilisation de la méthode C<every>.
 
-=head1 EXTENSIONS
+=head1 BUGS
 
-Il serait sans doute intéressant de pouvoir retourner la liste des
-lexèmes correspondant à l'analyse de tout un flot de caractères.
+C<Parse::Lex> ne fonctionne qu'avec perl 5.004. Si votre version est
+antérieure, utilisez la sous-class C<Parse::CLex>.
+
+Les analyseurs de la classe C<Parse::CLex> ne permettent pas
+d'utiliser des expressions régulières avec ancrage.
 
 =head1 AUTEUR
 
@@ -267,16 +302,15 @@ Philippe Verdret
 
 =head1 AVERTISSEMENT
 
-Je considère que la présente version de Token.pm/Lex.pm est
-expérimentale. Ces modules peuvent notablement évoluer en fonction des
-remarques et des suggestions que vous voudrez bien m'envoyer.
+Je considère que la présente version des classes Token.pm/Lex.pm est
+expérimentale. Ces classes peuvent évoluer de façon notable, en
+particulier en fonction des remarques et des suggestions que vous
+voudrez bien m'envoyer.
 
 =head1 REFERENCES
 
 Friedl, J.E.F. Mastering Regular Expressions. O'Reilly & Associates
 1996.
-
-Groc, B., & Bouhier, M. - Programmation par la syntaxe. Dunod 1990.
 
 Mason, T & Brown, D. - Lex & Yacc. O'Reilly & Associates, Inc. 1990.
 

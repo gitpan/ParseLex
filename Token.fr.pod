@@ -1,7 +1,7 @@
 =head1 NAME
 
 C<Parse::Token> - Classe définissant les lexèmes utilisés par
-Parse::Lex.pm (Alpha 1.15).
+Parse::Lex.pm (Alpha 1.16).
 
 =head1 SYNOPSIS
 
@@ -77,7 +77,7 @@ contenue dans l'objet. Si ce lexème est reconnu sur le flot de
 caractère à analyser alors C<next> retourne la chaîne trouvée et met le
 statut de l'objet à vrai.
 
-=item new SYMBOL_NAME, REGEXP, ANONYNOUS SUB
+=item new SYMBOL_NAME, REGEXP, SUB
 
 Crée un objet de type C<Token>. Les arguments de la méthode C<new> sont
 dans l'ordre : un nom symbolique, une expression régulière et une
@@ -132,7 +132,7 @@ Retourne l'expression régulière définie dans l'objet C<Token>.
 =item set HASH
 
 Permet de décorer un objet Token au moyen d'une liste
-d'attribut-valeurs. 
+d'attribut-valeurs.
 
 Un nom d'attribut peut être utilisé comme nom de méthode.
 

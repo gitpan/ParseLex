@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl
-require 5.000;
 
+require 5.004; # or use CLex.pl
 use Parse::Lex;
 
 $lexer = Parse::Lex->new(qw(
@@ -12,8 +12,9 @@ $lexer = Parse::Lex->new(qw(
 $lexer->from(\*DATA);
 
 $lexer->every (sub { 
-		 print $_[0]->name, "\t";
-		 print $_[0]->getstring, "\n";
+		 my $self = shift;
+		 print $self->name, "\t";
+		 print $self->getstring, "\n";
 	       });
 
 __END__

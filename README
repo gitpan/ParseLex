@@ -1,16 +1,23 @@
-
-                       Parse::Lex.pm/Parse::Token.pm - 1.15
+	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
+	      o                                       o
+	     o  Parse::Lex.pm/Parse::Token.pm - 1.16   o
+	      o                                       o
+	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 
 ___________
 DESCRIPTION
 
 The Parse::Lex.pm module for perl5 is an object-oriented generator of
-lexical analysers.
+lexical analyzers.
 
-Parse::Lex.pm is currently under development but perfectly usable
-(IMHO). Documentation is in French. It's not a linguistic provocation!
-I am very busy, and I've no time to translate the documentation in
-English (and I know that the result will not be perfect ;-).
+ *************************WARNING!************************************
+ * The Parse::Lex class doesn't work with a perl version inferior to *
+ * 5.004. Use the Parse::Clex instead.                               *
+ *********************************************************************
+
+Documentation is in French. It's not a linguistic provocation!  I am
+very busy, and I've no time to translate the documentation in English
+(and I know that the result will not be perfect ;-).
 
 A collection of examples demonstrating various Parse::Lex features can
 be found in the "examples" directory.
@@ -33,6 +40,19 @@ HOW TO BUILD and INSTALL IT
 
 _____________________________________
 CHANGES, ESPECIALLY INCOMPATIBILITIES
+
+Modifications of the 1.15 version
+
+o Parse::Lex - Evolutions
+
+  - new methods: pos(), offset(), recordno().
+
+  - creation of two classes: Parse::Lex, Parse::CLex.
+
+o Parse::Lex - Bugs
+
+  - "make install" seems to work correctly
+    (Thanks to Helmut Jarausch and Paul Lucassen)
 
 Modifications of the 1.14 version
 

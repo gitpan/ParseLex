@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl
 require 5.000;
 
-use Parse::Lex;
+use Parse::CLex;
 
 print STDERR "Version $Parse::Lex::VERSION\n";
 @token = qw(
@@ -12,6 +12,7 @@ print STDERR "Version $Parse::Lex::VERSION\n";
 $lexer = Parse::Lex->new(@token);
 $lexer->from(\*DATA);
 
+$DB::single = 1;
 $content = $INTEGER->next;
 if ($INTEGER->status) {
   print "$content\n";

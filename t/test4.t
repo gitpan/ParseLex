@@ -3,16 +3,14 @@
 BEGIN {  push(@INC, './t') }
 use W;
 
-require 5.004; # or use CLex.pl
-
 $test = W->new('1..1');
-$test->result("examples/tokenizer.pl");
+$test->result("examples/ctokenizer.pl");
 $test->expected(\*DATA);
 print $test->report(1, sub { 
 		      my $expectation =  $test->expected;
 		      my $result =  $test->result;
 		      $expectation =~ s/\s+$//;
-		      print STDERR "Result: $result\n";
+#		      print STDERR "Result: $result\n";
 #		      print STDERR "Expectation: $expectation\n";
 		      $result =~ s/\s+$//;
 		      $expectation eq $result;
@@ -40,20 +38,20 @@ Record number: 3
 Type: NEWLINE	Content:->
 <-
 Version 1.16
-Trace is ON in class Parse::Lex
+Trace is ON in class Parse::CLex
 Use of uninitialized value at Parse/Trace.pm line 30.
-[main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]* ): 1
-[main::lexer|Parse::Lex] Token read (ADDOP, [-+] ): +
-[main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]* ): 2
-[main::lexer|Parse::Lex] Token read (ADDOP, [-+] ): -
-[main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]* ): 5
-[main::lexer|Parse::Lex] Token read (NEWLINE, 
- ): 
+[main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 1
+[main::lexer|Parse::CLex] Token read (ADDOP, [-+]): +
+[main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 2
+[main::lexer|Parse::CLex] Token read (ADDOP, [-+]): -
+[main::lexer|Parse::CLex] Token read (INTEGER, [1-9][0-9]*): 5
+[main::lexer|Parse::CLex] Token read (NEWLINE, 
+): 
 
-[main::lexer|Parse::Lex] Token read (STRING, "(?:[^"]+|"")*" ): "This is a multiline
+[main::lexer|Parse::CLex] Token read (STRING, "(?:[^"]+|"")*"): "This is a multiline
 string with an embedded "" in it"
-[main::lexer|Parse::Lex] Token read (NEWLINE, 
- ): 
+[main::lexer|Parse::CLex] Token read (NEWLINE, 
+): 
 
-[main::lexer|Parse::Lex] Token read (ERROR, .* ): this is an invalid string with a "" in it"
-can't analyze: "this is an invalid string with a "" in it"" at examples/tokenizer.pl line 22.
+[main::lexer|Parse::CLex] Token read (ERROR, .*): this is an invalid string with a "" in it"
+can't analyze: "this is an invalid string with a "" in it"" at examples/ctokenizer.pl line 22.

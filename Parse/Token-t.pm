@@ -5,8 +5,8 @@ use strict;
 
 package Parse::Token;
 
-my $oldnext = \&next;
-*next = sub {
+my $oldNext = \&next;
+*next = sub {			# add some actions before and after the routine call
   my $self = $_[0];
   if ($Parse::Token::trace) {
     my $name = $self->name;
@@ -22,7 +22,7 @@ my $oldnext = \&next;
       }
     }
   }
-  my $string = &$oldnext(@_);
+  my $string = &$oldNext(@_);
   if ($Parse::Token::trace) {
     if ($self->status) {
       $self->context("token found: $string");
@@ -33,7 +33,7 @@ my $oldnext = \&next;
   $string;
 };
 
-my $oldisnext = \&isnext;
+my $oldIsnext = \&isnext;
 *isnext = sub {
   my $self = $_[0];
   if ($Parse::Token::trace) {
@@ -50,7 +50,7 @@ my $oldisnext = \&isnext;
       }
     }
   }
-  my $status = &$oldisnext(@_);
+  my $status = &$oldIsnext(@_);
   if ($Parse::Token::trace) {
     if ($self->status) {
       $self->context("token found: ${$_[1]}");

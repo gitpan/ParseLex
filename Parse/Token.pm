@@ -13,7 +13,7 @@ use Carp;
 use vars qw($AUTOLOAD);
 
 if ((caller(0))[0] ne 'Parse::Lex') {
-  carp "The Parse::Token must be called only via the Parse::Lex class";
+  carp "The Parse::Token class must be called only via the Parse::Lex class";
 }
 
 use vars qw($trace);
@@ -31,16 +31,16 @@ $Token::EOI = Parse::Token->new('EOI');
 sub new {
   my $receiver = shift;
   my $class = (ref $receiver or $receiver);
-  bless [
-	 0,			# object status
-	 '',			# recognized string 
-	 $_[0],			# symbolic name
-	 $_[1],			# regexp
-	 $_[2],			# associated sub
-	 {},			# token decoration
- 	 $_[3],			# reader object
-	 $trace,
-	], $class;
+  my $self = bless [], $class;
+  $self->[$STATUS] = 0;		# object status
+  $self->[$STRING] = '';	# recognized string 
+  $self->[$NAME] = $_[0];	# symbolic name
+  $self->[$REGEXP] = $_[1];	# regexp
+  $self->[$SUB] = $_[2];	# associated sub
+  $self->[$READER] = $_[3];	# reader object
+  $self->[$ATTRIBUTES] = {};	# token decoration
+  $self->[$TRACE] = $trace;	# trace
+  $self;
 }
 
 sub AUTOLOAD {			# Thanks Tom
@@ -55,7 +55,7 @@ sub AUTOLOAD {			# Thanks Tom
     ${$self->[$ATTRIBUTES]}{$name};
   }
 }
-# set(HASH)
+# set(ATTRIBUTE, VALUE)
 # Purpose: set an attribute value
 sub set {  ${$_[0]->[$ATTRIBUTES]}{$_[1]} = $_[2];}
 # get(ATT)
@@ -130,14 +130,14 @@ sub do     { &{$_[1]}($_[0]) }	# why not?
 sub next {			# return the token string 
   my $self = shift;
   my $reader = $self->[$READER];
-  my $pendingToken = $reader->[$Lex::PEND_TOKEN];
+  my $pendingToken = ${$reader->[$Lex::PEND_TOKEN]};
   if ($pendingToken == $Token::EOI) {
     $self->[$STATUS] = $self == $Token::EOI ? 1 : 0;
     return undef;		
   }
   $reader->next() unless $pendingToken;
-  if ($self == $reader->[$Lex::PEND_TOKEN]) {
-    $reader->[$Lex::PEND_TOKEN] = 0; # now no pending token
+  if ($self == ${$reader->[$Lex::PEND_TOKEN]}) {
+    ${$reader->[$Lex::PEND_TOKEN]} = 0; # now no pending token
     my $string = $self->[$STRING];
     $self->[$STRING] = '';
     $self->[$STATUS] = 1;
@@ -156,14 +156,14 @@ sub next {			# return the token string
 sub isnext {
   my $self = shift;
   my $reader = $self->[$READER];
-  my $pendingToken = $reader->[$Lex::PEND_TOKEN];
+  my $pendingToken = ${$reader->[$Lex::PEND_TOKEN]};
   if ($pendingToken == $Token::EOI) {
     ${$_[0]} = undef;
     return $self->[$STATUS] = $self == $Token::EOI ? 1 : 0;
   }
   $reader->next() unless $pendingToken;
-  if ($self == $reader->[$Lex::PEND_TOKEN]) {
-    $reader->[$Lex::PEND_TOKEN] = 0; # now no pending token
+  if ($self == ${$reader->[$Lex::PEND_TOKEN]}) {
+    ${$reader->[$Lex::PEND_TOKEN]} = 0; # now no pending token
     ${$_[0]} = $self->[$STRING];
     $self->[$STRING] = '';
     $self->[$STATUS] = 1;
@@ -174,8 +174,6 @@ sub isnext {
     0;
   }
 }
-
-
 1;
 __END__
 

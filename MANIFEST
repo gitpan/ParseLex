@@ -1,8 +1,8 @@
 Lex.fr.pod
 MANIFEST
-MANIFEST.bak
 Makefile
 Makefile.PL
+Parse/CLex.pm
 Parse/Lex.pm
 Parse/Preprocess.pm
 Parse/Token-t.pm
@@ -10,6 +10,7 @@ Parse/Token.pm
 Parse/Trace.pm
 README
 Token.fr.pod
+examples/ctokenizer.pl
 examples/every.pl
 examples/tokenizer.pl
 examples/tokens.pl
@@ -17,3 +18,4 @@ t/W.pm
 t/test1.t
 t/test2.t
 t/test3.t
+t/test4.t

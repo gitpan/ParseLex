@@ -7,28 +7,28 @@ use Carp;
 #use vars qw($indent);
 $Trace::indent = 0;
 
-use FileHandle;
+# doesn't work with my Perl current version
+#use FileHandle;
 my $TRACE = \*STDERR;		# Default
 
 my %cache = ();
 sub name { $cache{$_[0]} or ($cache{$_[0]} = $_[0]->findName) }
-sub inpkg { 'main' }		# no better definition at time
-sub findName {			# Try to find the "name"
+sub inpkg { 'main' }		# no better definition at the present time
+
+sub findName {			# Try to find the "name" of self
+				# assume $self is put in a scalar variable
   my $self = shift;
   my $pkg = $self->inpkg;
   my $symbol;
   my $value;
-  $^W = 0;
   no strict qw(refs);
   map {
     ($symbol = ${"${pkg}::"}{$_}) =~ s/[*]//;
-    $value = ${$symbol};
-    if (defined $value and $value eq $self) {
-      return $symbol;
+    if (defined($value = ${$symbol})) {
+      return $symbol if ($value eq $self);
     } 
   } keys %{"${$pkg}::"};
   use strict qw(refs);
-  $^W = 1;
   return 'no name';
 }
 sub context {
@@ -47,13 +47,13 @@ sub trace {
   my $class = (ref $self or $self);
 				# state switch
   no strict qw(refs);
+
   ${"${class}::trace"} = not ${"${class}::trace"};
   if (${"${class}::trace"}) {
     push @INC, '.';
     my $file = $class;
     $file =~ s!::!/!g;
-    # specialized methods for the trace mode
-    eval {
+    eval {			# Load specialized methods
       require "${file}-t.pm";
     };
     print STDERR "Trace is ON in class $class\n";
@@ -66,7 +66,7 @@ sub trace {
     if (ref $_[0]) {
       $TRACE = $_[0];
     } else {
-      $TRACE = new FileHandle("> $_[0]");
+#      $TRACE = new FileHandle("> $_[0]");
       unless ($TRACE) {
 	croak qq^unable to open "$_[0]"^;
       } else {

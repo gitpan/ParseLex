@@ -3,82 +3,86 @@
 BEGIN {  push(@INC, './t') }
 use W;
 
+require 5.004; # or use CLex.pl
+
 $test = W->new('1..1');
 $test->result("examples/every.pl");
 $test->expected(\*DATA);
 $test->assert('\n\n$');
 print $test->report(1, sub { 
-		      $test->expected eq $test->result 
+		      my $result = $test->result;
+#		      print $result;
+		      $test->expected eq $result;
 		    });
 
 __END__
-main::INTEGER	1
-main::ADDOP	+
-main::INTEGER	2
-main::ADDOP	+
-main::INTEGER	3
-main::ADDOP	+
-main::INTEGER	4
-main::ADDOP	+
-main::INTEGER	5
-main::ADDOP	+
-main::INTEGER	6
-main::ADDOP	+
-main::INTEGER	6
-main::ADDOP	+
-main::INTEGER	7
-main::ADDOP	+
-main::INTEGER	7
-main::ADDOP	+
-main::INTEGER	7
-main::ADDOP	-
-main::INTEGER	76
-main::NEWLINE	
+INTEGER	1
+ADDOP	+
+INTEGER	2
+ADDOP	+
+INTEGER	3
+ADDOP	+
+INTEGER	4
+ADDOP	+
+INTEGER	5
+ADDOP	+
+INTEGER	6
+ADDOP	+
+INTEGER	6
+ADDOP	+
+INTEGER	7
+ADDOP	+
+INTEGER	7
+ADDOP	+
+INTEGER	7
+ADDOP	-
+INTEGER	76
+NEWLINE	
 
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::INTEGER	0
-main::ADDOP	+
-main::NEWLINE	
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+INTEGER	0
+ADDOP	+
+NEWLINE	
 
-main::INTEGER	1
-main::ADDOP	+
-main::INTEGER	2
-main::ADDOP	+
-main::INTEGER	3
-main::ADDOP	+
-main::INTEGER	4
-main::ADDOP	+
-main::INTEGER	5
-main::ADDOP	+
-main::INTEGER	6
-main::ADDOP	+
-main::INTEGER	6
-main::ADDOP	+
-main::INTEGER	7
-main::ADDOP	+
-main::INTEGER	7
-main::ADDOP	+
-main::INTEGER	7
-main::ADDOP	-
-main::INTEGER	76
-main::NEWLINE	
+INTEGER	1
+ADDOP	+
+INTEGER	2
+ADDOP	+
+INTEGER	3
+ADDOP	+
+INTEGER	4
+ADDOP	+
+INTEGER	5
+ADDOP	+
+INTEGER	6
+ADDOP	+
+INTEGER	6
+ADDOP	+
+INTEGER	7
+ADDOP	+
+INTEGER	7
+ADDOP	+
+INTEGER	7
+ADDOP	-
+INTEGER	76
+NEWLINE	
 
