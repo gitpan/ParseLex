@@ -1,11 +1,11 @@
-# Copyright (c)  Philippe Verdret, 1995-1997
+# Copyright (c)  Philippe Verdret, 1995-1998
 
 require 5.003;
 use strict;
 
 package Parse::Token;
 
-my $oldNext = \&next;
+my $old_next = \&next;
 *next = sub {			# add some actions before and after the routine call
   my $self = $_[0];
   if ($Parse::Token::trace) {
@@ -22,7 +22,7 @@ my $oldNext = \&next;
       }
     }
   }
-  my $string = &$oldNext(@_);
+  my $string = &$old_next(@_);
   if ($Parse::Token::trace) {
     if ($self->status) {
       $self->context("token found: $string");
@@ -33,7 +33,7 @@ my $oldNext = \&next;
   $string;
 };
 
-my $oldIsnext = \&isnext;
+my $old_isnext = \&isnext;
 *isnext = sub {
   my $self = $_[0];
   if ($Parse::Token::trace) {
@@ -50,7 +50,7 @@ my $oldIsnext = \&isnext;
       }
     }
   }
-  my $status = &$oldIsnext(@_);
+  my $status = &$old_isnext(@_);
   if ($Parse::Token::trace) {
     if ($self->status) {
       $self->context("token found: ${$_[1]}");

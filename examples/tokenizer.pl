@@ -1,7 +1,9 @@
-#!/usr/local/bin/perl -w
+#!/usr/local/bin/perl 
 
 require 5.004; 
-BEGIN {  unshift @INC, "../lib"; }
+#BEGIN {  unshift @INC, "../lib"; }
+
+$^W = 0;
 use Parse::Lex;
 print STDERR "Version $Parse::ALex::VERSION\n";
 

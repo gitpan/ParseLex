@@ -9,6 +9,7 @@
 # Todo:
 # Parse::Lex->configure(From => TT, Xxx => yyy)
 # implement a lexer instance as a pseudo-hash
+# use of constant is another possibility (see The Perl Journal Spring 99)
 #   and replace [$ATT_NAME] by {ATT_NAME}
 
 require 5.004;
@@ -18,9 +19,9 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.08';
+$Parse::ALex::VERSION = '2.09';
 use Parse::Trace;
-@Parse::ALex::ISA = qw(Parse::Trace); # ???
+@Parse::ALex::ISA = qw(Parse::Trace); 
 
 use Parse::Token;	
 use Parse::Template;
@@ -33,6 +34,9 @@ my $DEFAULT_STREAM = \*STDIN;	# Input Filehandle
 my $eoi = 0;			# 1 if end of imput 
 my $pendingToken = 0;		# 1 if there is a pending token
 my $index = -1;
+
+#use constant STREAM => 0;
+#use constant EOI => 9;
 
 my %_map;			# Define a mapping between element names and numbers
 my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN, 
@@ -300,6 +304,7 @@ sub every {
     Carp::croak "argument of the 'every' method must be an anonymous routine";
   }
   my $token = &{$self->[$SUB]}($self);
+  $DB::single = 1;
   while (not $self->[$EOI]) {
     &{$do_on}($token);
     $token = &{$self->[$SUB]}($self);
@@ -322,7 +327,8 @@ sub from {
   my $debug = 0;
 				# From STREAM
   local *X = $_[0];		
-  if (fileno(X)) {		
+  print STDERR "arg: $_[0] ", fileno(X) , "\n" if $debug;
+  if (defined(fileno(X))) {		
     $self->[$STREAM] = $_[0];
     print STDERR "From stream\n" if $debug;
 
@@ -438,12 +444,13 @@ sub readline {
 
 sub isTrace { $_[0]->[$TRACE] }
 
+# could be improved
 # Purpose: Toggle the trace mode
 # todo: regenerate the lexer if needed
 sub trace { 
   my $self = shift;
   my $class = ref($self);
-  if ($class) {			# Object atrtibute
+  if ($class) {			# Object method
     if ($self->[$TRACE]) {
       $self->[$TRACE] = 0;
       print STDERR qq!trace OFF for a "$class" object\n!;
@@ -451,7 +458,7 @@ sub trace {
       $self->[$TRACE] = 1;
       print STDERR qq!trace ON for a "$class" object\n!;
     }
-  } else {			# The class attribute
+  } else {			# Class method
     $self->prototype()->[$TRACE] = not $self->prototype->[$TRACE];
     $self->SUPER::trace(@_);
   }

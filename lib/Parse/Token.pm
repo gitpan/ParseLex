@@ -8,9 +8,8 @@ use strict qw(subs);
 package Parse::Token;		# or perhaps: Parse::AToken
 use Parse::Trace;
 @Parse::Token::ISA = qw(Parse::Trace);
-use vars qw($AUTOLOAD);
 
-use vars qw($trace $PENDING_TOKEN $EOI);
+use vars qw($AUTOLOAD $trace $PENDING_TOKEN $EOI);
 $trace = 0;
 
 # todo: use a pseudo-hash
@@ -761,21 +760,23 @@ sub _buildRegexp {
   [$start, $content, $end];
 }
 
-#package Parse::Token::Nested;
-# Should analyze strings like:
-# (+ (* 3 4) 4)
-# 
-#package Parse::Token::Delimited;
-#use Parse::Trace;
-#@Parse::Token::Delimited::ISA = qw(Parse::Token::Multiline Parse::Trace);
+package Parse::Token::Delimited;
+use Parse::Trace;
+@Parse::Token::Delimited::ISA = qw(Parse::Token::Multiline Parse::Trace);
 
 # Examples:
 # [qw(/* (?:.*?) */)]
 # [qw(<!-- (?:.*?) -->)]
 # [qw(<? (?:.*?) ?>)]
-#sub new {
-#  die "not yet implemented";
-#}
+sub new {
+  die "not yet implemented";
+}
+
+#package Parse::Token::Nested;
+# Should analyze strings like:
+# (+ (* 3 4) 4)
+# 
+
 1;
 __END__
 

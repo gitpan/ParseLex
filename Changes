@@ -1,4 +1,9 @@
-MODIFICATIONS SINCE VERSION 2.07 - mercredi, 10 février 1999, 19:12:27 MET
+MODIFICATIONS SINCE VERSION 2.08 - 08/04/99
+
+o New version of Parse::Template
+o Corrected bug in from() method 
+
+MODIFICATIONS SINCE VERSION 2.07 - 10/02/1999
 
 o documentation updates
 

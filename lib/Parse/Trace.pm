@@ -43,6 +43,7 @@ sub context {
   my $sign = defined $name ? "[$name|$ref]" : "[$ref]";
   print $TRACE "  " x $Trace::indent, "$sign @_\n";
 }
+
 sub trace {	
   my $self = shift;
   my $class = (ref $self or $self);
@@ -51,11 +52,13 @@ sub trace {
 
   ${"${class}::trace"} = not ${"${class}::trace"};
   if (${"${class}::trace"}) {
-    push @INC, '.';
     my $file = $class;
     $file =~ s!::!/!g;
     eval {			# Load specialized methods
-      require "${file}-t.pm";
+      # die() is trapped by $Parse::Template::SIG{__DIE__}
+      #local $SIG{__DIE__} = sub {};
+      #require "${file}-t.pm";
+      do "${file}-t.pm";	# do esn't raised an exception
     };
     print STDERR "Trace is ON in class $class\n";
   } else {

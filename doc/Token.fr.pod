@@ -174,7 +174,7 @@ pour inclure la nouvelle-ligne dans les caractères reconnus par "C<.>" :
 
 (Remarques. Il est possible d'écrire des expressions régulières plus
 performantes en terme de temps d'exécution, mais ce n'est pas notre
-objectif ici.)
+objectif ici, voir I<Mastering Regular Expressions>.)
 
 La fonction anonyme est exécutée au moment ou le token est reconnu
 par l'analyseur lexical. Cette fonction possède deux arguments : C<$_[0]>
@@ -240,15 +240,16 @@ notre analyseur lexical.  Si la recherche de ce token réussie il est
 alors possible d'appeler une fonction dévolue au traitement des
 erreurs.
 
-=head1 EVOLUTIONS
+=head1 Sous-classes de Parse::Token
 
 Des sous-classes de la classe C<Parse::Token> sont en cours de
-définitions. Elles permettrons de reconnaître des structures
-particulières comme par exemple les chaînes de caractères entre
-guillemets, les commentaires C, etc. Voici les sous-classes que j'ai
-l'intention de créer :
+définitions. Elles permettent ou permettrons de reconnaître des
+structures particulières comme, par exemple, les chaînes de caractères
+entre guillemets, les commentaires C, etc. Voici les sous-classes que
+j'ai l'intention de créer :
 
-C<Parse::Token::Simple> : pour définir les tokens 'ordinaires'.
+C<Parse::Token::Simple> : pour définir les tokens qui ne nécessitent
+pas le lecture de nouvelles données.
 
 C<Parse::Token::Multiline> : pour définir des tokens pouvant
 nécessiter la lecture de données complémentaires.
@@ -261,6 +262,51 @@ chaînes de caractères entre guillemets.
 
 Le nom de ces classes a valeur de proposition. Vous pouvez me faire
 des suggestions.
+
+=head2 Parse::Token::Simple
+
+=head2 Parse::Token::Multiline
+
+=head2 Parse::Token::Quoted
+
+Exemples.
+
+      ---------------------------------------------------------
+	Début	Fin	Littéralisation
+      ---------------------------------------------------------
+	'	'	''		Citation
+	"	"	""		Citation
+	"	"	\		Citation
+      ---------------------------------------------------------
+
+=head2 Parse::Token::Delimited
+
+Exemples.
+
+      ---------------------------------------------------------
+	Début	Fin	Contrainte
+			Sur le contenu	
+      ---------------------------------------------------------
+	/*	*/			Commentaire C
+	<!--	-->	Pas de '--'	Commentaire XML
+	<!--	-->	           	Commentaire SGML
+	<?  ?>				Processing instruction
+					en SGML/XML
+      ---------------------------------------------------------
+
+
+=head2 Parse::Token::Nested
+
+Exemples.
+
+      ----------------------------------------------------------
+	Début	Fin	Contrainte
+			Sur le contenu	
+      ----------------------------------------------------------
+	(	)			Symbolic Expressions
+	{	}			Rich Text Format Groups
+      ----------------------------------------------------------
+
 
 =head1 AUTEUR
 

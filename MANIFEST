@@ -9,9 +9,6 @@ examples/ctokens.pl
 examples/every.pl
 examples/sexp.pl
 examples/sexpcond.pl
-examples/template.pl
-examples/template1.pl
-examples/template2.pl
 examples/tokenizer.pl
 lib/Parse/ALex.pm
 lib/Parse/CLex.pm
