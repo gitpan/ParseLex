@@ -1,6 +1,6 @@
 =head1 NAME
 
-C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.17).
+C<Parse::Lex> - Générateur d'analyseurs lexicaux (Alpha 1.18).
 
 =head1 SYNOPSIS
 

@@ -9,10 +9,9 @@ print STDERR "Version $Parse::Lex::VERSION\n";
 	    INTEGER  [1-9][0-9]*
 	   );
 
-$lexer = Parse::Lex->new(@token);
+$lexer = Parse::CLex->new(@token);
 $lexer->from(\*DATA);
 
-$DB::single = 1;
 $content = $INTEGER->next;
 if ($INTEGER->status) {
   print "$content\n";

@@ -10,8 +10,8 @@ use Parse::Lex;
 use Carp;
 @Parse::CLex::ISA = qw(Parse::Lex);
 
-my $lexer = Parse::CLex->SUPER::proto();
-sub proto { $lexer }
+my $prototype = bless [@{Parse::CLex->SUPER::prototype()}];
+sub prototype { $prototype }
 
 my($FH, $STRING, $SUB, $BUFFER, $PENDING_TOKEN, 
    $RECORD_NO, $RECORD_LENGTH, $OFFSET, $POS,
@@ -190,8 +190,7 @@ $CODE{'FOOTER'} = q!
 }
 !;
 ####################################################################
-$lexer->[$TEMPLATE] = \%CODE;	# code template
-
+$prototype->[$TEMPLATE] = \%CODE;	# code template
 1;
 __END__
 

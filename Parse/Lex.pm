@@ -10,8 +10,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::Lex;
-use vars qw($VERSION);
-$VERSION = '1.17';
+$Parse::Lex::VERSION = '1.18';
 use Parse::Trace;
 @Parse::Lex::ISA = qw(Parse::Trace);
 use Parse::Token;
@@ -28,7 +27,7 @@ my $pendingToken = 0;		# 1 if a pending token
 
 
 my $lexer = bless [];		# Prototype object
-sub proto { $lexer }
+sub prototype { $lexer }
 
 use vars qw(%_map);
 my $i = -1;
@@ -412,7 +411,7 @@ sub trace {
       print STDERR qq!trace ON for a "$class" object\n!;
     }
   } else {			# for the class attribute
-    $self->proto()->[$TRACE] = not $self->proto->[$TRACE];
+    $self->prototype()->[$TRACE] = not $self->prototype->[$TRACE];
     $self->SUPER::trace(@_);
   }
 }
@@ -433,7 +432,7 @@ sub hold {
       $self->genlex();
   } else {			# for the class attribute
 				# or perhaps change the default object
-    $self->proto()->[$HOLD] = not $self->proto()->[$HOLD];
+    $self->prototype()->[$HOLD] = not $self->prototype()->[$HOLD];
 #    $hold = not $hold;
 #    print "class method $hold $self\n";
   }
@@ -462,7 +461,7 @@ sub skip {
   } else {			# for the class attribute
 				# or perhaps change the default object
     defined $_[0] ?
-      $self->proto()->[$SKIP] = $_[0] : $self->proto()->[$SKIP];
+      $self->prototype()->[$SKIP] = $_[0] : $self->prototype()->[$SKIP];
 #    defined $_[0] ? $skip = $_[0] : $skip;
   }
 }
@@ -479,17 +478,19 @@ sub new {
   #if ($class eq 'Parse::Lex' and $[ < 5.004);
   # warn "doesn\'t work with Perl $[";
 
-  my $proto = $class->proto;
-  $proto->reset;
-  my $self = bless $proto, $class; 
+  my $prototype = $class->prototype;
+  $prototype->reset;
+  my $self = bless [@{$prototype}], $class; 
 
   $self->[$INIT] = 1;
   $self->[$IN_PKG] = (caller(0))[0]; # From which package?
 
-  my @token = $self->newset(@_);
-  splice(@{$self}, $TOKEN_LIST, 1, @token);	
-
-  $self->gencode(@token);
+  my @token = ();
+  if (@_) {
+    @token = $self->newset(@_);
+    splice(@{$self}, $TOKEN_LIST, 1, @token);	
+    $self->gencode(@token);
+  }
   $self;
 }
 sub ppregexp { # pre-process regexp: ! or / (delimiters) -> \! \/
