@@ -1,3 +1,7 @@
+MODIFICATIONS SINCE VERSION 2.11 - 03/09/99
+
+o Added test for the Parse::EventLex class
+
 MODIFICATIONS SINCE VERSION 2.10 - 02/09/99
 
 o Definition of Parse::Token's sub-classes 

@@ -3,7 +3,7 @@
 BEGIN {  push(@INC, './t') }
 use W;
 
-require 5.004; # or use CLex.pl
+require 5.004; 
 
 $test = W->new('1..1');
 $test->result("examples/tokenizer.pl");
@@ -39,7 +39,7 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 2.11
+Version 2.12
 Trace is ON in class Parse::Lex
 [main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]*): 1
 [main::lexer|Parse::Lex] Token read (ADDOP, [-+]): +

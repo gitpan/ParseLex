@@ -1,13 +1,13 @@
 #!/usr/local/bin/perl -w
 
 use strict;
-require 5.000;
-BEGIN {  unshift @INC, "../lib"; }
+require 5.005;
+#BEGIN {  unshift @INC, "../lib"; }
 
 use Parse::LexEvent;
 print STDERR "Version $Parse::LexEvent::VERSION\n";
 
-my @token = (
+my @tokens = (
 	      new Parse::Token::Simple(Name => 'ccomment', 
 				       Handler => 'comment',
 				       Regex => '//.*\n',
@@ -39,8 +39,8 @@ sub comment {
 sub remainder {
   print $_[0]->name, ": $_[1]\n";
 }
-
-my $lexer = Parse::LexEvent->new(@token);
+#select STDERR;
+my $lexer = Parse::LexEvent->new(@tokens);
 $lexer->from(\*DATA);
 $lexer->parse();
 
@@ -53,4 +53,3 @@ var d = "string in \"double\" quotes";
 var s = 'string in ''single'' quotes';
 var x = 1;
 var y = 2;
-

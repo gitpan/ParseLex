@@ -1,8 +1,8 @@
 	       o-o-o-o-o-o-o-o-o-o-o-o-o
 	      o                         o
-	     o   Parse::Lex - 2.11       o
+	     o   Parse::Lex - 2.12       o
 	    o    Parse::LexEvent - 1.00   o
-            o    Parse::Token - 2.11      o
+            o    Parse::Token - 2.12      o
 	    o    Parse::Template - 0.32   o
 	     o   Parse::YYLex - 0.91     o
 	      o                         o
@@ -32,6 +32,6 @@ HOW TO BUILD and INSTALL IT
 				
 % perl Makefile.PL
 % make 
-% make test	
+% make test # for a specific test: make test TEST_VERBOSE=1 TEST_LOG=1 TEST_FILES=t/test5.t
 % make install
 

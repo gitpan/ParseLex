@@ -6,7 +6,8 @@ doc/Lex.fr.pod
 doc/LexEvent.fr.pod
 doc/Template.fr.pod
 doc/Token.fr.pod
-examples/cparser.pl
+examples/evparser.pl
+examples/evparser2.pl
 examples/ctokenizer.pl
 examples/ctokens.pl
 examples/every.pl
@@ -29,3 +30,5 @@ t/test1.t
 t/test2.t
 t/test3.t
 t/test4.t
+t/test5.t
+

@@ -305,13 +305,13 @@ sub lexer {
 sub getRegisteredLexerType {
   my $self = shift;
   my $type = shift;
-  my $class = ref $self;
+  my $class = ref $self || $self;
   no strict 'refs';
   foreach (@{"${class}::REGISTERED_LEXER_TYPE"}) {
     return $_ if $type->isa("Parse::$_");
   }
   require Carp;
-  Carp::croak "No template defined for the '$type' lexer";
+  Carp::croak "no template defined for the '$class' token in the '$type' lexer";
 }
 # not documented
 sub do { 
@@ -666,9 +666,8 @@ sub genCode {
     print STDERR "REGEXP[$tokenid]->\t\t$ppregexp\n";
   }
   $template->env('REGEXP' => $ppregexp);
-  my $lexer_type = ref $lexer;
   # find the template code defined for this lexer type
-  $lexer_type = $self->getRegisteredLexerType($lexer_type);
+  my $lexer_type = __PACKAGE__->getRegisteredLexerType(ref $lexer);
   my $code = $template->eval("\U$lexer_type" . '_HEADER_PART');
   $self->code($code);
   $code;
@@ -995,9 +994,8 @@ sub genCode {
   }
   $template->env('REGEXP' => $ppregexp);
 
-  my $lexer_type = ref $lexer;	
   # find the template code defined for this lexer type
-  $lexer_type = $self->getRegisteredLexerType($lexer_type);
+  my $lexer_type = __PACKAGE__->getRegisteredLexerType(ref $lexer);
   my $code = $template->eval("\U$lexer_type" . '_HEADER_PART');
   $self->code($code);
   $code;

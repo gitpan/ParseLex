@@ -5,7 +5,7 @@ my $log = $ENV{TEST_LOG} ? 'testlog' : 0;
 if ($log) {
   open(LOG, ">>$log") 
     or die qq^unable to open "$log"^;
-  print STDERR "see informations in $log\n";
+  print STDERR "see informations in the '$log' file\n";
 } 
 
 sub new {
