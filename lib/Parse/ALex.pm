@@ -4,10 +4,11 @@
 # Parse::Template + Parse::ALex - Abstract Lexer
 #              /  |  \
 #             /   |   \
-#          Lex  CLex  ...       - Concrete lexer from an instanciated template
+#          Lex  CLex  ...       - Concrete lexer 
 
 # Todo:
 # Parse::Lex->configure(-from => TT, -xxx => yyy)
+# represent the lexer instance by an hash
 
 require 5.003;
 use integer;
@@ -16,14 +17,14 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.02';
+$Parse::ALex::VERSION = '2.03';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace);
 use Parse::Token;
 use Parse::Template;
 use Carp;
 
-my $thisClass = &{sub { caller }};
+my $thisClass = &{sub { caller }}; # or __PACKAGE__
 
 				# Default values
 my $trace = 0;			# if true enable the trace mode
@@ -42,7 +43,7 @@ my($STREAM, $FROM_STRING, $SUB, $BUFFER, $PENDING_TOKEN,
    $TEMPLATE, 
    $STRING_SUB, $STREAM_SUB, $HANDLES,
    $STRING_CODE, $STREAM_CODE, $CODE,
-   $CODE_STATE_MACHINE, 
+   $STATE_MACHINE_CODE, 
    $STATES, $STACK_STATES,
    $EXCLUSIVE_COND, $INCLUSIVE_COND,
    $TRACE, $INIT, 
@@ -96,7 +97,7 @@ $lexer->[$STRING_SUB] = sub {};	# cache for the string lexer
 				# State machine
 $lexer->[$EXCLUSIVE_COND] = {};	# exclusive conditions
 $lexer->[$INCLUSIVE_COND] = {};	# inclusive conditions
-$lexer->[$CODE_STATE_MACHINE] = ''; # definition of the state machine
+$lexer->[$STATE_MACHINE_CODE] = ''; # definition of the state machine
 $lexer->[$STATES] = { 'INITIAL' => \$somevar };	# state machine, define a class will be better
 $lexer->[$STACK_STATES] = [];	# stack of states, not used
 $lexer->[$TRACE] = $trace;
@@ -230,6 +231,21 @@ sub tokenList {
 				# Call of the lexer routine
 sub next { &{$_[0]->[$SUB]} }
 
+				# and some next() wrappers
+# Purpose: Analyze data in one call
+# Arguments: string or stream to analyze
+# Returns: self
+# Todo: generate a specific lexer class: Parse::Lex::Event
+sub parse {
+  my $self = shift;
+  unless (defined $_[0]) {
+    carp "no data to analyze";
+  }
+  $self->from($_[0]);
+  my $next = $self->[$SUB];
+  &{$next}($self) until $self->[$EOI]; 
+  $self;
+}
 # Purpose: Analyze data in one call
 # Arguments: string or stream to analyze
 # Returns: a list of token name and text
@@ -282,7 +298,6 @@ sub from {
 				# From STREAM
   if (ref($_[0]) eq 'GLOB' and defined fileno($_[0])) {	
     $self->[$STREAM] = $_[0];
-
     print STDERR "From stream\n" if $debug;
 
     if (@{$self->[$STREAM_CODE]}) { # Code already exists
@@ -293,14 +308,13 @@ sub from {
 	$self->_switchHandles();
 	$self->[$FROM_STRING] = 0;
       }
-    } else {
+    } else {			# code doesn't exist
       print STDERR "STREAM code generation\n" if $debug;
       # genCode()
       $self->[$FROM_STRING] = 0;
-      $self->genBody($self->tokenList); # if $self->[$THREE_PART_RE];
       $self->genHeader();
+      $self->genBody($self->tokenList); # if $self->[$THREE_PART_RE];
       $self->genFooter();
-      #
       $self->_saveHandles();
       $self->genLex();
 				# $self->getCode()
@@ -311,30 +325,30 @@ sub from {
     $self->reset;
     $self;
   } elsif (defined $_[0]) {	# From STRING
-    unless ($self->[$FROM_STRING]) {
-      print STDERR "From string\n" if $debug;
-
-      $self->[$FROM_STRING] = 1;
+    print STDERR "From string\n" if $debug;
     
-      if (@{$self->[$STRING_CODE]}) { # code already exists
+    $DB::single = 1;
+    if (@{$self->[$STRING_CODE]}) { # code already exists
+      unless ($self->[$FROM_STRING]) {
 	print STDERR "code already exists\n" if $debug;
 	$self->[$CODE] = [@{$self->[$STRING_CODE]}];
 	$self->[$SUB] = $self->[$STRING_SUB];
 	$self->_switchHandles();
-      } else {
-	print STDERR "code generation\n" if $debug;
-	# genCode()
-	$self->genBody($self->tokenList); # if $self->[$THREE_PART_RE];
-	$self->genHeader();
-	$self->genFooter();
-	#
-	$self->_saveHandles();
-	$self->genLex();
-				# $self->getCode()
-	$self->[$STRING_CODE] = [@{$self->[$CODE]}];	# cache
-	$self->[$STRING_SUB] = $self->[$SUB];
       }
+    } else {
+      print STDERR "STRING code generation\n" if $debug;
+      # genCode()
+      $self->genHeader();
+      $self->genBody($self->tokenList); # if $self->[$THREE_PART_RE];
+      $self->genFooter();
+      #
+      $self->_saveHandles();
+      $self->genLex();
+				# $self->getCode()
+      $self->[$STRING_CODE] = [@{$self->[$CODE]}]; # cache
+      $self->[$STRING_SUB] = $self->[$SUB];
     }
+    $self->[$FROM_STRING] = 1;
     $self->reset;
     my $buffer = join($", @_); # Data from a list
     ${$self->[$BUFFER]} = $buffer;
@@ -397,8 +411,9 @@ sub readline {
 }
 
 sub isTrace { $_[0]->[$TRACE] }
+
 # Purpose: Toggle the trace mode
-				# regenerate the lexer if needed!!!
+# todo: regenerate the lexer if needed
 sub trace { 
   my $self = shift;
   my $class = ref($self);
@@ -448,17 +463,17 @@ sub hold {
 sub skip {			
   my $self = shift;
 
-  my $debug = 0;
+  my $debug = 1;
   if (ref $self) {		# Instance method
     if (defined($_[0]) and $_[0] ne $self->[$SKIP]) {
       print STDERR "skip value: '$_[0]'\n" if $debug;
       $self->[$SKIP] = $_[0];
 
       # delete the code already generated
-      @{$lexer->[$STREAM_CODE]} = ();
-      @{$lexer->[$STRING_CODE]} = ();
-      @{$lexer->[$CODE]} = ();		
-      $lexer->[$SUB] = $DEFAULT_SUB;
+      @{$self->[$STREAM_CODE]} = ();
+      @{$self->[$STRING_CODE]} = ();
+      @{$self->[$CODE]} = ();		
+      $self->[$SUB] = $DEFAULT_SUB;
 
     } else {
       $self->[$SKIP];
@@ -470,11 +485,11 @@ sub skip {
       $self->prototype()->[$SKIP] = $_[0] : $self->prototype()->[$SKIP];
   }
 }
-
 # not documented
 # Purpose: returns a 
 # - a copy of the prototypical lexer if used as a class method
 # - a copy of the message receiver if used as an instance method
+# naive implementation
 sub clone {
   my $receiver = shift;
   my $class;
@@ -497,7 +512,6 @@ sub new {
 
   my $self = $receiver->clone;
   $self->reset;
-  $self->template->partOf($self); # now the template is part of self
   $self->[$INIT] = 1;
   $self->[$IN_PKG] = (caller(0))[0]; # From which package?
 
@@ -533,9 +547,10 @@ sub setTemplate {
   my $part = shift;
   $self->[$TEMPLATE]->{$part} = shift;
 }
-
+my $TRACE_GEN = 0;
 sub genCode {
   my $self = shift;
+  print STDERR "genCode()\n" if $TRACE_GEN;
   $self->genHeader();
   $self->genBody($self->tokenList); 
   $self->genFooter();
@@ -543,6 +558,20 @@ sub genCode {
 # Remark: not documented
 sub genHeader {
   my $self = shift;
+  my $template = $self->template;
+  print STDERR "genHeader()\n" if $TRACE_GEN;
+				# build the template env
+  $template->env(
+		 'template' => \$template,
+		 'SKIP' => $self->[$SKIP],
+		 'IS_HOLD' => $self->[$HOLD],
+		 'HOLD_TEXT' => $HOLD_TEXT,
+		 'EOI' => $EOI,
+		 'TRACE' => $TRACE,
+		 'IS_TRACE' => $self->[$TRACE],
+		 'PENDING_TOKEN' => $PENDING_TOKEN,
+		); 
+
   if ($self->[$FROM_STRING]) {
     $self->[$CODE]->[0] = $self->template->eval('HEADER_STRING');
   } else {
@@ -555,6 +584,7 @@ sub genHeader {
 # Remark: not documented
 sub genBody {
   my $self = shift;
+  print STDERR "genBody()\n"  if $TRACE_GEN;
 				# 
   $self->[$THREE_PART_RE] = 0;
   if ($self->[$INIT]) {		# object creation
@@ -570,41 +600,51 @@ sub genBody {
   my $ppregexp = '';
   my $tmpregexp = '';
   my $condition = '';
+  my $debug = 0;
+
+				# Todo: Define a template for each type of tokens
   while (@_) {			# list of Token instances
     $token = shift;
     $regexp = $token->regexp();
     $tokenid = $self->inpkg() . '::' . $token->name();
-    $template->env('tokenid', $tokenid);
+    $template->env('TOKEN_ID', $tokenid);
     $condition = $self->genCondition($token->condition);
-    $template->env('condition', $condition);
+    $template->env('CONDITION', $condition);
 
-    if (ref($regexp) eq 'ARRAY') {
+    if (ref($regexp) eq 'ARRAY') { # Todo: define a specific class for this
       $self->[$THREE_PART_RE] = 1;
       if ($#{$regexp} >= 3) {
 	carp join  " " , "Warning!", $#{$regexp} + 1, 
 	"arguments in token definition";
       }
       $ppregexp = $tmpregexp = $template->ppregexp(${$regexp}[0]);
-      $template->env('start', $ppregexp);
+      $template->env('REGEXP_START', $ppregexp);
 
       $ppregexp = ${$regexp}[1] ? $template->ppregexp(${$regexp}[1]) : '(?:.*?)';
       $tmpregexp .= $ppregexp;
-      $template->env('middle', $ppregexp);
+      $template->env('REGEXP_MIDDLE', $ppregexp);
 
       $ppregexp = $template->ppregexp(${$regexp}[2] or ${$regexp}[0]);
-      $template->env('end', $ppregexp);
-      $template->env('regexp', "$tmpregexp$ppregexp");
+      $template->env('REGEXP_END', $ppregexp);
+      $ppregexp = "$tmpregexp$ppregexp";
+      if ($debug) {
+	print STDERR "REGEXP[$tokenid]->\t\t$ppregexp\n";
+      }
+      $template->env('REGEXP', $ppregexp);
 
 				# source of data
       if ($fromString) {
-	$body .= $template->eval('ROW_HEADER_THREE_PART_RE_STRING');
+	$body .= $template->eval('THREE_PART_TOKEN_STRING');
       } else {
-	$body .= $template->eval('ROW_HEADER_THREE_PART_RE_STREAM');
+	$body .= $template->eval('THREE_PART_TOKEN_STREAM');
       }
     } else {
       $ppregexp = $template->ppregexp($regexp);
-      $template->env('regexp', $ppregexp);
-      $body .= $template->eval('ROW_HEADER_SIMPLE_RE');
+      if ($debug) {
+	print STDERR "REGEXP[$tokenid]->\t\t$ppregexp\n";
+      }
+      $template->env('REGEXP', $ppregexp);
+      $body .= $template->eval('SIMPLE_TOKEN');
     }
 
     $sub = $token->action;
@@ -620,6 +660,7 @@ sub genBody {
 # Remark: not documented
 sub genFooter {
   my $self = shift;
+  print STDERR "genFooter()\n" if $TRACE_GEN;
   $self->[$CODE]->[2] = $self->template->eval('FOOTER');
 }
 
@@ -639,26 +680,27 @@ sub getCode {
 sub genLex {
   my $self = shift;
   $self->genCode unless @{$self->[$CODE]};	
+  print STDERR "Lexer generation...\n"  if $TRACE_GEN;
 
-				# closure environnement
-  my $buffer = '';
-  my $length = 0;		# length of the current record
-  my $line = 0;
-  my $pos = 0;
-  my $offset = 0;
-  my $token = '';
-  my %state = ();
+				# Closure environnement
+  my $LEX_BUFFER = '';		# buffer to analyze
+  my $LEX_LENGTH = 0;		# buffer length
+  my $LEX_RECORD = 0;		# current record number
+  my $LEX_POS = 0;		# current position in buffer
+  my $LEX_OFFSET = 0;		# offset from the beginning
+  my $LEX_TOKEN = '';		# token instance
+  my %state = ();		# states
 
   $self->handles(\(
-		 $buffer,	# buffer to analyze
-		 $length,	# buffer length
-		 $line,		# current line number
-		 $pos,		# current position 
-		 $offset,	# offset from the beginning
+		 $LEX_BUFFER,	
+		 $LEX_LENGTH,	
+		 $LEX_RECORD,		
+		 $LEX_POS,	
+		 $LEX_OFFSET,
 		 %state,
 		));		
 
-  my $fhr = \$self->[$STREAM];
+  my $LEX_FHR = \$self->[$STREAM];
   my $stateMachine = $self->genStateMachine();
   my $analyzer = $self->getCode();
   eval qq!$stateMachine; \$self->[$SUB] = sub $analyzer!;
@@ -668,7 +710,6 @@ sub genLex {
     my $line = 0;
     $stateMachine =~ s/^/sprintf("%3d", $line++)/meg; # line numbers
     $analyzer =~ s/^/sprintf("%3d", $line++)/meg;
-    $analyzer =~ s/\t/        /mg;
     print STDERR "$stateMachine$analyzer\n";
     print STDERR "$@\n";
     die "\n" if $@;
@@ -717,31 +758,39 @@ sub exclusive {
   }
 }
 sub genCondition {
+  my $trace = 1;
   my $self = shift;
   my $specif = shift;
   return '' if $specif =~ /^ALL:/; # special condition
 
-  my $prefix = '';		# genCondition
-  my $condition = '';
-  my $tmp = '';
   my %exclusion = %{$self->exclusive};
   my %inclusion = %{$self->inclusive};
-  my $stateName = '';
-  while ($specif =~ /^(.+):/g) {	# Ex. A:B:C: or A,C: 
-    ($prefix) = ($1);
-    while ($prefix =~ /(\w+)/g) {
-      unless (defined $exclusion{$1} or defined $inclusion{$1}) {
-	croak "'$1' condition not defined";
+  return '' unless $specif or keys %exclusion;
+
+  my $condition;
+  my @condition;
+  my $cond_group;
+  my $cond_item;
+  my @cond_group;
+  if ($specif =~ /^(.+):/g) {	# Ex. A:B:C: or A,C: 
+    my ($prefix) = ($1);
+    foreach $cond_group (split /:/, $prefix) {
+      foreach $cond_item (@cond_group = split /,/, $cond_group) {
+	unless ($cond_item eq 'INITIAL' or 
+		defined $exclusion{$cond_item} or 
+		defined $inclusion{$cond_item}) {
+	  croak "'$cond_item' condition not defined";
+	}
+	delete $exclusion{$cond_item};
+	delete $inclusion{$cond_item};
       }
-      delete $exclusion{$1};
-      delete $inclusion{$1};
-      if ($condition)  {
-	$condition .= q! or $! . "$1";
-      } else {
-	$condition = qq!\(\$! . "$1";	# beginning
-      }
+      push @condition, "(" . join(" or ", map { "\$$_" } @cond_group) . ")";
     }
-    $condition = "$condition)";	# end
+    if (@condition == 1) {
+      $condition = shift @condition;
+    } else {
+      $condition = "(" . join(" and ", @condition) . ")";
+    }
   }
   my @tmp = ();
   if (@tmp = map { "\$$_" } keys(%exclusion)) {
@@ -751,16 +800,15 @@ sub genCondition {
       $condition = "not (" . join(" or ", @tmp) . ")";
     }
   } 
-  if (@tmp = map { "\$$_" } keys(%inclusion) and $condition) {
-    $condition = "not (" . join(" or ", @tmp) . ") and $condition";
-  } 
+  print STDERR "genCondition(): $specif -> $condition\n" if $trace;
   $condition ne '' ? "$condition and" : '';
 }
 sub genStateMachine { 
   my $self = shift;
   my $somevar;
 
-  my $stateDeclaration = ' my $INITIAL = 1; ' .
+  my $stateDeclaration = 'my $INITIAL = 1;' .
+    "\n" .
       q!$state{'INITIAL'} = \\$INITIAL;! . "\n";
   my $stateName = '';
   foreach $stateName (keys (%{$self->exclusive}), keys(%{$self->inclusive})) {
@@ -773,12 +821,12 @@ sub genStateMachine {
 # not documented
 sub setStateMachine {
   my $self = shift;
-  $self->[$CODE_STATE_MACHINE] = shift;
+  $self->[$STATE_MACHINE_CODE] = shift;
 }
 # not documented
 sub getStateMachine {
   my $self = shift;
-  $self->[$CODE_STATE_MACHINE];
+  $self->[$STATE_MACHINE_CODE];
 }
 # not documented
 sub getState {

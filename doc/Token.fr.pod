@@ -156,9 +156,9 @@ Les expressions régulières sont utilisées pour reconnaître :
 2. le "corps" du token, si cette seconde expression est absente
 C<Parse::Lex> utilise C<(?:.*?)>,
 
-3. la fin du token, si cette dernière expression est absente
-on utilise la première.  (Attention ! La fin du token ne peut être à
-cheval sur plusieurs enregistrements).
+3. la fin du token, si cette dernière expression est absente on
+utilise la première.  La fin du token ne peut être à cheval sur
+plusieurs enregistrements.
 
 Exemple.
 

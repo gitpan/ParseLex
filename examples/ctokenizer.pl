@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl -w
 
 require 5;
-
+BEGIN {  unshift @INC, "../lib"; }
 use Parse::CLex;
 print STDERR "Version $Parse::ALex::VERSION\n";
 

@@ -46,10 +46,9 @@ sub new {
   $self;
 }
 # Purpose: export a token objet to the caller package or 
-#          in the package returns by inpkg()
+#          in the package returned by inpkg()
 # Arguments: 
 # Returns: the token object 
-# Remarks: what to do if called as a class method?
 sub exportTo {
   my $self = shift;
   my $inpkg = $self->inpkg;

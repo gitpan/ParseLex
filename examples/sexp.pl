@@ -12,7 +12,7 @@ sub upto {
   my $upto = shift;
   my $token;
   my @list = ();
-  my $current = $self->getToken; # need to save the current token
+  my $current = $self->getToken; # save the current token
   while (($token = $self->next)->type ne $upto) {
     push @list, $token->text;
   }

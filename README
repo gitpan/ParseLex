@@ -1,10 +1,10 @@
 	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 	      o                                   o
-	     o   Parse::Lex/Parse::Token - 2.02    o
+	     o   Parse::Lex/Parse::Token - 2.03    o
+	     o   Parse::Template - 0.02            o
 	     o   Parse::YYLex - 0.91               o
 	      o                                   o
-	       o-o-o-o-o-o-o-o-o-o-o-o--o-oo-o-o-o
-
+	       o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o
 
 The Parse::Lex.pm module for perl5 is an object-oriented generator of
 lexical analyzers.
@@ -25,7 +25,7 @@ This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 -- 
-Philippe Verdret <philippe.verdret@sonovision-itep.fr>
+Philippe Verdret <pverdret@sonovision-itep.fr>
 Vladimir Alexiev <vladimir@cs.ualberta.ca> and Ocrat 
 for the English translation of the pod documentation.
 
@@ -42,11 +42,20 @@ _____________________________________
 CHANGES, ESPECIALLY INCOMPATIBILITIES
 
 
+MODIFICATIONS SINCE VERSION 2.02 - 10/06/98
+
+o Conditions seems work as expected
+  thanks to Robert Au (rau@datapathsystems.com)
+
+o Parse::Template is now documented.
+
+o Template processing has notably evolved.
+
 MODIFICATIONS SINCE VERSION 2.01
 
 o New examples
 
-o New class: Parse::YYLex (Vladimir Alexiev)
+o New class: Parse::YYLex (author Vladimir Alexiev)
 
 o New special condition: ALL
 

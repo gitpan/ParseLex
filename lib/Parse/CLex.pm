@@ -17,7 +17,7 @@ sub prototype { $lexer or $thisClass->SUPER::prototype }
 ####################################################################
 #Structure of the next routine:
 #  HEADER_STRING | HEADER_STREAM
-#  ((ROW_HEADER_SIMPLE_RE|ROW_HEADER_THREE_PART_RE_STREAM|ROW_HEADER_THREE_PART_RE_STRING)
+#  ((SIMPLE_TOKEN|THREE_PART_TOKEN_STREAM|THREE_PART_TOKEN_STRING)
 #   (ROW_FOOTER|ROW_FOOTER_SUB))+
 #  FOOTER
 
@@ -31,161 +31,161 @@ my %TEMPLATE = ();
 $lexer->template(new Parse::Template (\%TEMPLATE));	# code template
 
 $TEMPLATE{'WITH_SKIP'} = q@
-   if ($buffer ne '' and $buffer =~ s/^<<$self->skip()>>//) {
+   if ($LEX_BUFFER ne '' and $LEX_BUFFER =~ s/^<<$SKIP>>//) {
      $textLength = length($&);
-     $offset += $textLength;
-     $pos += $textLength;
-     <<$self->isHold ? $template->eval('HOLD_SKIP') : ''>>
+     $LEX_OFFSET += $textLength;
+     $LEX_POS += $textLength;
+     <<$IS_HOLD ? $template->eval('HOLD_SKIP') : ''>>
    }
 @;
 $TEMPLATE{'WITH_SKIP_LAST_READ'} = q@
-	      if ($buffer =~ s/^<<$self->skip()>>//) {
+	      if ($LEX_BUFFER =~ s/^<<$SKIP>>//) {
 		$textLength = length($&);
-		$offset+= $textLength;
-		$pos = $textLength;
-                <<$self->isHold ? $template->eval('HOLD_SKIP') : ''>>
+		$LEX_OFFSET+= $textLength;
+		$LEX_POS = $textLength;
+                <<$IS_HOLD ? $template->eval('HOLD_SKIP') : ''>>
 	      } else {
-		$pos = 0; 
+		$LEX_POS = 0; 
 		last READ;
 	      }
 @;
-$TEMPLATE{'HOLD_SKIP'} = q@$self->[<<$self->_map('HOLD_TEXT')>>] .= $&;@;
+$TEMPLATE{'HOLD_SKIP'} = q@$self->[<<$HOLD_TEXT>>] .= $&;@;
 $TEMPLATE{'HEADER_STRING'} = q!
   {		
    my $textLength = 0;
-   <<$self->skip ne '' ? $template->eval('WITH_SKIP') : '' >>
-   if ($buffer eq '') {
-     $self->[<<$self->_map('EOI')>>] = 1;
-     $token = $Parse::Token::EOI;
+   <<$SKIP ne '' ? $template->eval('WITH_SKIP') : '' >>
+   if ($LEX_BUFFER eq '') {
+     $self->[<<$EOI>>] = 1;
+     $LEX_TOKEN = $Parse::Token::EOI;
      return $Parse::Token::EOI;
    }
    my $content = '';
-   $token = undef;
+   $LEX_TOKEN = undef;
  CASE:{
 !;
 $TEMPLATE{'HEADER_STREAM'} = q!
   {
    my $textLength = 0;
-   <<$self->skip ne '' ? $template->eval('WITH_SKIP') : '' >>
-   my $fh = $$fhr;
-   if ($buffer eq '') {
-     if ($self->[<<$self->_map('EOI')>>]) # if EOI
+   <<$SKIP ne '' ? $template->eval('WITH_SKIP') : '' >>
+   my $LEX_FH = $$LEX_FHR;
+   if ($LEX_BUFFER eq '') {
+     if ($self->[<<$EOI>>]) # if EOI
        { 
-         $self->[<<$self->_map('PENDING_TOKEN')>>] = $Parse::Token::EOI;
+         $self->[<<$PENDING_TOKEN>>] = $Parse::Token::EOI;
          return $Parse::Token::EOI;
        } 
      else 
        {
       READ: {
 	  do {
-	    $buffer = <$fh>; 
-	    if (defined($buffer)) {
-	      $line++;
-	      <<$self->skip ne '' ? $template->eval('WITH_SKIP_LAST_READ') : '' >>
+	    $LEX_BUFFER = <$LEX_FH>; 
+	    if (defined($LEX_BUFFER)) {
+	      $LEX_RECORD++;
+	      <<$SKIP ne '' ? $template->eval('WITH_SKIP_LAST_READ') : '' >>
 	    } else {
-	      $self->[<<$self->_map('EOI')>>] = 1;
-	      $token = $Parse::Token::EOI;
+	      $self->[<<$EOI>>] = 1;
+	      $LEX_TOKEN = $Parse::Token::EOI;
 	      return $Parse::Token::EOI;
 	    }
-	  } while ($buffer eq '');
+	  } while ($LEX_BUFFER eq '');
 	}
       }
    }
    my $content = '';
-   $token = undef;
+   $LEX_TOKEN = undef;
  CASE:{
 !;
-$TEMPLATE{'ROW_HEADER_SIMPLE_RE'} = q!
-   <<$template->env('condition')>>
-   $buffer =~ s/^<<$template->env('regexp')>>// and do {
+$TEMPLATE{'SIMPLE_TOKEN'} = q!
+   <<$CONDITION>>
+   $LEX_BUFFER =~ s/^<<$REGEXP>>// and do {
      $content = $&;
      $textLength = length($content);
-     $offset += $textLength;
-     $pos += $textLength;
-     <<$self->isTrace ? $template->eval('ROW_HEADER_SIMPLE_RE_TRACE') : '' >>
+     $LEX_OFFSET += $textLength;
+     $LEX_POS += $textLength;
+     <<$IS_TRACE ? $template->eval('SIMPLE_TOKEN_TRACE') : '' >>
 !;
-$TEMPLATE{'ROW_HEADER_SIMPLE_RE_TRACE'} = q!
-     if ($self->[<<$self->_map('TRACE')>>]) {
-       my $trace = "Token read (" . $<<$template->env('tokenid')>>->name . 
-	 ", '<<$template->env('regexp')>>\E'): $content"; 
+$TEMPLATE{'SIMPLE_TOKEN_TRACE'} = q!
+     if ($self->[<<$TRACE>>]) {
+       my $trace = "Token read (" . $<<$TOKEN_ID>>->name . 
+	 ", '<<$REGEXP>>\E'): $content"; 
        $self->context($trace);
      }
 !;
-$TEMPLATE{'ROW_HEADER_THREE_PART_RE_STRING'} = q!
-   <<$template->env('condition')>>
-   $buffer =~ s/^<<$template->env('regexp')>>// and do {
+$TEMPLATE{'THREE_PART_TOKEN_STRING'} = q!
+   <<$CONDITION>>
+   $LEX_BUFFER =~ s/^<<$REGEXP>>// and do {
      $content = $&;
      $textLength = length($content);
-     $offset += $textLength;
-     $pos += $textLength;
-     <<$self->isTrace ? $template->eval('ROW_HEADER_THREE_PART_RE_TRACE') : '' >>
+     $LEX_OFFSET += $textLength;
+     $LEX_POS += $textLength;
+     <<$IS_TRACE ? $template->eval('THREE_PART_TOKEN_TRACE') : '' >>
 !;
-$TEMPLATE{'ROW_HEADER_THREE_PART_RE_STREAM'} = q!
-    <<$template->env('condition')>>
-    $buffer =~ s/^<<$template->env('start')>>// and do {
-      my $string = $buffer;
+$TEMPLATE{'THREE_PART_TOKEN_STREAM'} = q!
+    <<$CONDITION>>
+    $LEX_BUFFER =~ s/^<<$REGEXP_START>>// and do {
+      my $string = $LEX_BUFFER;
       $content = $&;
-      my $length = length($content) + length($buffer);
+      my $length = length($content) + length($LEX_BUFFER);
      do {
-       while (not $string =~ /<<$template->env('end')>>/) {
-	 $string = <$fh>;
+       while (not $string =~ /<<$REGEXP_END>>/) {
+	 $string = <$LEX_FH>;
 	 if (not defined($string)) { # 
-           $self->[<<$self->_map('EOI')>>] = 1;
-           $token = $Parse::Token::EOI;
-	   croak "unable to find end of token ", $<<$template->env('tokenid')>>->name, "";
+           $self->[<<$EOI>>] = 1;
+           $LEX_TOKEN = $Parse::Token::EOI;
+	   croak "unable to find end of token ", $<<$TOKEN_ID>>->name, "";
 	 }
 	 $length = length($string);
-	 $line++;
-	 $buffer .= $string;
+	 $LEX_RECORD++;
+	 $LEX_BUFFER .= $string;
        }
        $string = '';
-       $buffer =~ s/^<<$template->env('middle')>>//;
+       $LEX_BUFFER =~ s/^<<$REGEXP_MIDDLE>>//;
        $content .= $&;
-     } until ($buffer =~ s/^<<$template->env('end')>>//);
+     } until ($LEX_BUFFER =~ s/^<<$REGEXP_END>>//);
      $content .= $&;
      $textLength = length($content);
-     $offset += $textLength;
-     $pos += $length - length($buffer);	
-     <<$self->isTrace ? $template->eval('ROW_HEADER_THREE_PART_RE_TRACE') : '' >>
+     $LEX_OFFSET += $textLength;
+     $LEX_POS += $length - length($LEX_BUFFER);	
+     <<$IS_TRACE ? $template->eval('THREE_PART_TOKEN_TRACE') : '' >>
 !;
-$TEMPLATE{'ROW_HEADER_THREE_PART_RE_TRACE'} = q!
-     if ($self->[<<$self->_map('TRACE')>>]) { # Trace
-       my $trace = "Token read (" . $<<$template->env('tokenid')>>->name .
-          ", '<<$template->env('regexp')>>\E'): $content"; 
+$TEMPLATE{'THREE_PART_TOKEN_TRACE'} = q!
+     if ($self->[<<$TRACE>>]) { # Trace
+       my $trace = "Token read (" . $<<$TOKEN_ID>>->name .
+          ", '<<$REGEXP>>\E'): $content"; 
         $self->context($trace);
      }
 !;
 $TEMPLATE{'ROW_FOOTER_SUB'} = q!
-     $<<$template->env('tokenid')>>->setText($content);
-     $self->[<<$self->_map('PENDING_TOKEN')>>] = $token 
-       = $<<$template->env('tokenid')>>;
-     $content = &{$<<$template->env('tokenid')>>->action}($token, $content);
-     ($token = $self->getToken)->setText($content);
-     <<$self->isTrace ? $template->eval('ROW_HEADER_SUB_TRACE') : ''>>
+     $<<$TOKEN_ID>>->setText($content);
+     $self->[<<$PENDING_TOKEN>>] = $LEX_TOKEN 
+       = $<<$TOKEN_ID>>;
+     $content = &{$<<$TOKEN_ID>>->action}($LEX_TOKEN, $content);
+     ($LEX_TOKEN = $self->getToken)->setText($content);
+     <<$IS_TRACE ? $template->eval('ROW_FOOTER_SUB_TRACE') : ''>>
      last CASE;
   };
 !;
-$TEMPLATE{'ROW_HEADER_SUB_TRACE'} = q!
-        if ($self->[<<$self->_map('PENDING_TOKEN')>>] ne $token) {
+$TEMPLATE{'ROW_FOOTER_SUB_TRACE'} = q!
+        if ($self->[<<$PENDING_TOKEN>>] ne $LEX_TOKEN) {
 	  if ($self->isTrace) {
 	    $self->context("token type has changed - " .
-			   "Type: " . $token->name .
+			   "Type: " . $LEX_TOKEN->name .
 			   " - Content: $content\n");
 	  }
 	}
 !;
 $TEMPLATE{'ROW_FOOTER'} = q!
-     $<<$template->env('tokenid')>>->setText($content);
-     $token = $<<$template->env('tokenid')>>;
+     $<<$TOKEN_ID>>->setText($content);
+     $LEX_TOKEN = $<<$TOKEN_ID>>;
      last CASE;
    };
 !;
-$TEMPLATE{'HOLD_TOKEN'} = q@$self->[<<$self->_map('HOLD_TEXT')>>] .= $content;@;
+$TEMPLATE{'HOLD_TOKEN'} = q@$self->[<<$HOLD_TEXT>>] .= $content;@;
 $TEMPLATE{'FOOTER'} = q!
   }#CASE
-  <<$self->isHold ? $template->eval('HOLD_TOKEN') : ''>>
-  $self->[<<$self->_map('PENDING_TOKEN')>>] = $token;
-  $token;
+  <<$IS_HOLD ? $template->eval('HOLD_TOKEN') : ''>>
+  $self->[<<$PENDING_TOKEN>>] = $LEX_TOKEN;
+  $LEX_TOKEN;
 }
 !;
 ####################################################################

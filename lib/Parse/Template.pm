@@ -1,13 +1,19 @@
-# Copyright (c) Philippe Verdret, 1995-1998
+# Copyright (c) Philippe Verdret, 1998
 # A very simple template processor 
 
-use strict;
+use strict
+require 5.004;
 package Parse::Template;
+$Parse::Template::VERSION = '0.02';
 
-my $DEBUG = 0;			# define a constant!!!
+use constant DEBUG => 0;	
+
+my $sym = 'sym00';
+sub genSymbol { $sym++ }	# generate: sym00, sym01, sym02, etc.
+
 sub new {
   my $receiver = shift;
-  my $class = (ref $receiver or $receiver);
+  my $class = genSymbol();
   my $self; 
   if (@_) {
     if (ref $_[0] eq 'HASH') {
@@ -18,43 +24,59 @@ sub new {
   } else {
     $self = bless {}, $class;
   }
+  no strict;
+  @{"${class}::ISA"} = ref $receiver || $receiver;
+  $self->initialize();	
   $self;
 }
-sub getPart {
+sub initialize {
   my $self = shift;
-  my $part = shift;
-  $self->{$part};
+  my $class = ref $self;
+  no strict;
+  #local($^W) = 0;		
+  ${"${class}::self"} = $self;
+  ${"${class}::self"} = $self;
+  $self;
 }
-sub setPart {
+sub undef {
   my $self = shift;
-  my $part = shift;
-  $self->{$part} = shift;
+  my $class = ref $self;
+  unless (@_) {
+    undef %{"${class}::"};
+  } else {}
 }
-sub partOf {
-  my $self = shift;
-  if (@_) {
-    $self->{'_partOf'} = shift;
-  } else {
-    $self->{'_partOf'};
-  }
-}
+use constant TRACE_ENV => 0;
 sub env {
   my $self = shift;
+  my $class = ref $self;
   my $symbol = shift;
+  no strict;
   if (@_) {
-    $self->{'_env'}->{$symbol} = shift;
-  } elsif (exists $self->{'_env'}->{$symbol}) {
-    my $value = $self->{'_env'}->{$symbol};
-    #print STDERR "$symbol -> $value\n" if $DEBUG;
-    $value;
+    while (@_) {
+      my $value = shift;
+      print STDERR "${class}::$symbol\t$value\n" if TRACE_ENV;
+      if (ref $value) {
+	*{"${class}::$symbol"} = $value;
+      } else {			# scalar value
+      	*{"${class}::$symbol"} = \$value;
+      }
+      $symbol = shift if @_;
+    }
+  } elsif (defined *{"${class}::$symbol"}) { # borrowed from Exporter.pm
+    return \&{"${class}::$symbol"} unless $symbol =~ s/^(\W)//;
+    my $type = $1;
+    return 
+      $type eq '&' ? \&{"${class}::$symbol"} :
+	$type eq '$' ? \${"${class}::$symbol"} :
+	    $type eq '@' ? \@{"${class}::$symbol"} :
+	    $type eq '%' ? \%{"${class}::$symbol"} :
+	    $type eq '*' ?  *{"${class}::$symbol"} :
+	    do { require Carp; Carp::croak("$type$symbol not defined") };
   } else {
-    print STDERR "'$symbol' not defined in the template environment\n" if $^W;
-    '';
+    undef;
   }
 }
-# Purpose:  
-# - validate the regexp
-# - replace "!" or "/" by "\!" or "\/"
+# Purpose:  validate the regexp and replace "!" or "/" by "\!" or "\/"
 # Arguments: a regexp
 # Returns: the preprocessed regexp
 sub ppregexp {
@@ -70,18 +92,32 @@ sub ppregexp {
   }{$1\\$2}xg;
   $regexp;
 }
-sub eval {
-  my $template = shift;		# WARNING! template is the object Template
-  my $self = $template->partOf;
+sub getPart {		
+  my $self = shift;
   my $part = shift;
-  my $code = $template->{$part};
+  $self->{$part};
+}
+sub setPart {		
+  my $self = shift;
+  my $part = shift;
+  $self->{$part} = shift;
+}
+sub eval {
+  my $self = shift;
+  my $class = ref $self;
+  my $part = shift;
+  my $code = $self->{$part};
   unless (defined $code) {
     die "'$part' template part not defined";
   }
-  $code =~ s{<<([^<].*?)>>}{
-    #print STDERR "expression to evaluate-->$1<--\n" if $DEBUG;
-    $1
+  local $^W = 0 if $^W;
+  $code =~ s{<<(.*?)>>}{
+    if (DEBUG) {
+      print STDERR "expression to eval {package $class; $1}\n";
+    } 
+    qq!package $class; $1!;
   }eegsx;
+  die "$@" if $@;
   $code;
 }
 1;
