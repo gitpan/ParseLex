@@ -1,3 +1,7 @@
+VERSION 2.17 - 6/01/2010
+
+o Parse::Template version bumped, because of conflicting ParseTemplate module
+
 VERSION 2.16 - 5/01/2010
 
 o New maintainer pscust@cpan.org

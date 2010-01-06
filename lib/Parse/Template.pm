@@ -1,7 +1,7 @@
 use strict;
 require 5.004;
 package Parse::Template;
-$Parse::Template::VERSION = '0.33';
+$Parse::Template::VERSION = '0.38';
 
 use constant DEBUG => 0;	
 
