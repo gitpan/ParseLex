@@ -1,8 +1,8 @@
 Changes
-doc/Lex.fr.pod
-doc/LexEvent.fr.pod
-doc/Template.fr.pod
-doc/Token.fr.pod
+doc/Lex.pod.fr
+doc/LexEvent.pod.fr
+doc/Template.pod.fr
+doc/Token.pod.fr
 examples/ctokenizer.pl
 examples/ctokens.pl
 examples/every.pl
@@ -25,6 +25,7 @@ lib/Parse/Trace.pm
 lib/Parse/YYLex.pm
 Makefile.PL
 MANIFEST
+MANIFEST.SKIP
 README
 t/test1.t
 t/test2.t
@@ -35,4 +36,5 @@ t/test6.t
 t/test7.t
 t/test8.t
 t/W.pm
+VERSION
 META.yml                                 Module meta-data (added by MakeMaker)

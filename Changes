@@ -1,8 +1,16 @@
-VERSION 2.17 - 6/01/2010
+VERSION 2.18 - 2010-02-26
+
+o CPAN shows module description from the French pod files, instead of 
+  the inline pod inside the module; rename French pod files;
+o Use the same version for all files in the module;
+o Add header documentation to ALex.pm and Trace.pm;
+o Solve RT #1861, in a way compatible with both perl 5.8 and 5.10
+
+VERSION 2.17 - 2010-01-06
 
 o Parse::Template version bumped, because of conflicting ParseTemplate module
 
-VERSION 2.16 - 5/01/2010
+VERSION 2.16 - 2010-01-05
 
 o New maintainer pscust@cpan.org
 o Parse::Template 0.33 : Fix syntax errors
@@ -13,8 +21,9 @@ o test4.t : adapt to current Perl (line vs chunk)
   Solves RT #158, #11808, #11809, #12846, #14785, #48964, #53112
 o tests : add blib/lib to Perl path
   Solves RT #48964, #53112
-o Added test8.t with code from RT #1861, but error is not reproduced in Perl 5.10, and 
-  patch does not work in Perl 5.10; patch not added.
+o Added test8.t with code from RT #1861, but error is not reproduced 
+  in Perl 5.10, and patch does not work in Perl 5.10; 
+  patch not added.
 
 VERSION 2.15 - 19/05/99
 

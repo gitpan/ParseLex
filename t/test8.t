@@ -4,17 +4,18 @@
 
 use strict;
 use Symbol;
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 my $file = "showbugtest.dat";
+my @input_lines = <DATA>;
+
 open F, ">$file" || die "Can't open test data file '$file' $!";
-while ( <DATA> ) {
-  print F;
-}
+print F @input_lines;
 close F;
 
 my $fh = gensym;
 
+is my_parser::parse(@input_lines), 3, "GOT: 3 lines"; 
 is my_parser::parse($file), 3, "GOT: 3 lines";
 is my_parser::parse($fh), undef, "No output because of bad file handle";
 is my_parser::parse($file), 3, "GOT: 3 lines"; 
@@ -39,20 +40,24 @@ sub parse {
   my $file = shift;
   my $fh;
   my $should_close = 0;
-  if ( ref $file eq "GLOB" ) {
+  if ( @_ ) { 					# more than one argument -> list of strings
+	$lexer->from($file, @_);	# had shifted first string to $file
+  }
+  elsif ( ref $file eq "GLOB" ) {
     $fh = $file;
     fileno( $fh ) or return undef;
+	$lexer->from($fh);
   }
   else {
     $fh = gensym;
     open $fh, $file or die "Can't open file '$file' for import. Error: $!";
     $should_close = 1;
+	$lexer->from($fh);
   }
 
   my $token;
   my $line_cnt = 0;
   
-  $lexer->from($fh);
   while ( $lexer->nextis(\$token) ) {
     ++ $line_cnt if $token->name eq "EOR";
   }

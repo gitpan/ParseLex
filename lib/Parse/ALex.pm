@@ -16,7 +16,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.17';
+$Parse::ALex::VERSION = '2.18';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace); 
 
@@ -251,21 +251,26 @@ sub tokenList {
 sub from {
   my $self = shift;
   my $debug = 0;
-				# From STREAM
-  local *X = $_[0];		
-  print STDERR "arg: $_[0] ", fileno(X) , "\n" if $debug;
-  if (defined(fileno(X))) {		
-    $self->[$STREAM] = $_[0];
+  
+  # check for stream : check only ref($fh) insteaf of fileno()
+  # Filehandles connected to memory objects via new features of
+  # "open" may return undefined even though they are open.)
+  my $fd = $_[0];
+  
+  print STDERR "arg: $fd\n" if $debug;
+  if (ref($fd)) {		# From STREAM
+    $self->[$STREAM] = $fd;
     print STDERR "From stream\n" if $debug;
 
     if (@{$self->[$LEXER_STREAM_CODE]}) { # Code already exists
       if ($self->[$FROM_STRING]) { # if STREAM definition isn't the current
-	print STDERR "code already exists\n" if $debug;
-	$self->[$LEXER_SUB] = $self->[$LEXER_STREAM_SUB];
-	$self->_switchClosureEnv();
-	$self->[$FROM_STRING] = 0;
+		print STDERR "code already exists\n" if $debug;
+		$self->[$LEXER_SUB] = $self->[$LEXER_STREAM_SUB];
+		$self->_switchClosureEnv();
+		$self->[$FROM_STRING] = 0;
       }
-    } else {			# code doesn't exist
+    } 
+	else {			# code doesn't exist
       print STDERR "Analyze STREAM - code generation\n" if $debug;
       $self->[$FROM_STRING] = 0;
       #$self->[$LEXER_SUB] = $DEFAULT_LEXER_SUB;      # 
@@ -274,16 +279,18 @@ sub from {
 
     $self->reset;
     $self;
-  } elsif (defined $_[0]) {	# From STRING
+  } 
+  elsif (defined $_[0]) {	# From STRING
     print STDERR "From string\n" if $debug;
     if (@{$self->[$LEXER_STRING_CODE]}) { # code already exists
       unless ($self->[$FROM_STRING]) {
-	print STDERR "code already exists\n" if $debug;
-	$self->[$LEXER_SUB] = $self->[$LEXER_STRING_SUB];
-	$self->_switchClosureEnv();
-	$self->[$FROM_STRING] = 1;
+		print STDERR "code already exists\n" if $debug;
+		$self->[$LEXER_SUB] = $self->[$LEXER_STRING_SUB];
+		$self->_switchClosureEnv();
+		$self->[$FROM_STRING] = 1;
       }
-    } else {			# code doesn't exist
+    } 
+	else {			# code doesn't exist
       print STDERR "Analyze STRING - code generation\n" if $debug;
       $self->[$FROM_STRING] = 1;
       # autogeneration doesn't work, 
@@ -297,9 +304,11 @@ sub from {
     ${$self->[$BUFFER]} = $buffer;
     ${$self->[$RECORD_LENGTH]} = CORE::length($buffer);
     $self;
-  } elsif ($self->[$STREAM]) {
+  } 
+  elsif ($self->[$STREAM]) {
     $self->[$STREAM];
-  } else {
+  } 
+  else {
     undef;
   }
 }
@@ -904,3 +913,27 @@ sub every {
   $self;
 }
 __PACKAGE__
+
+__END__
+
+=head1 NAME
+
+C<Parse::ALex> - Generator of lexical analyzers - abstract class
+
+=head1 SYNOPSIS
+
+See the C<Parse::Lex> documentation.
+
+=head1 DESCRIPTION
+
+This is an abstract class used by C<Parse::Lex> and C<Parse::CLex>.
+
+=head1 AUTHOR
+
+Philippe Verdret.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1999 Philippe Verdret. All rights reserved.  This module
+is free software; you can redistribute it and/or modify it under the
+same terms as Perl itself.

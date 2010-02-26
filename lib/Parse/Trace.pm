@@ -3,6 +3,7 @@ require 5.000;
 use strict;
 
 package Parse::Trace;
+$Parse::Trace::VERSION = '2.18';
 use Carp;
 #use vars qw($indent);
 $Trace::indent = 0;
@@ -83,3 +84,16 @@ sub trace {
 1;
 __END__
 
+=head1 NAME
+
+C<Parse::Trace> - Trace functions used by the lexical analyzers
+
+=head1 AUTHOR
+
+Philippe Verdret.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1999 Philippe Verdret. All rights reserved.  This module
+is free software; you can redistribute it and/or modify it under the
+same terms as Perl itself.

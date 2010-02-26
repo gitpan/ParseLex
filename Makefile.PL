@@ -6,7 +6,7 @@ WriteMakefile(
 	      'DISTNAME'        => "ParseLex",
 	      'VERSION_FROM'	=> 'lib/Parse/ALex.pm',
 		  'PREREQ_PM' 		=> { 'Test::More' => 0 },
-	      'clean'			=> {'FILES' => 'err'},
+	      'clean'			=> {'FILES' => ['err', 'testlog']},
 	      'dist'            => { COMPRESS => 'gzip', SUFFIX => 'gz' },
 );
 

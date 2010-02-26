@@ -5,7 +5,7 @@ use strict qw(subs);
 
 package Parse::Lex;
 use Parse::ALex;
-$Parse::Lex::VERSION = $Parse::ALex::VERSION;
+$Parse::Lex::VERSION = '2.18';
 @Parse::Lex::ISA = qw(Parse::Tokenizer);
 
 my $lexer = __PACKAGE__->clone;
@@ -111,7 +111,7 @@ __END__
 
 =head1 NAME
 
-C<Parse::Lex>  - Generator of lexical analyzers
+C<Parse::Lex> - Generator of lexical analyzers - moving pointer inside text
 
 =head1 SYNOPSIS
 
