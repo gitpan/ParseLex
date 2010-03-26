@@ -1,8 +1,8 @@
-=head1 NAME
+#=head1 NAME
 
 Parse::Template - Processeur de templates contenant des expressions Perl (0.32)
 
-=head1 SYNOPSIS
+#=head1 SYNOPSIS
 
   use Parse::Template;
 
@@ -27,7 +27,7 @@ Parse::Template - Processeur de templates contenant des expressions Perl (0.32)
               'hash' => { 'key_value' => q!It\'s an hash value! });
   print $tmplt->eval('TOP'), "\n";
 
-=head1 DESCRIPTION
+#=head1 DESCRIPTION
 
 La classe C<Parse::Template> permet d'évaluer des expressions Perl
 placées dans un texte.  Cette classe peut être utilisée comme
@@ -109,11 +109,11 @@ l'expression à incriminer.  Si la variable
 C<$Parse::Template::CONFESS> contient une valeur VRAIE la pile des
 évaluations est imprimée.
 
-=head1 METHODES
+#=head1 METHODES
 
-=over 4
+#=over 4
 
-=item new HASH
+#=item new HASH
 
 Constructeur de la classe. C<HASH> est un tableau associatif qui
 définit le texte du template.
@@ -123,9 +123,9 @@ Exemple.
 	use Parse::Template;
 	$t = new Parse::Template('key' => 'associated text');
 
-=item env HASH
+#=item env HASH
 
-=item env SYMBOL
+#=item env SYMBOL
 
 Permet de définir l'environnement spécifique à un template.
 
@@ -142,29 +142,29 @@ Exemples.
   @{$tmplt->env('@LIST')}             Idem
 
 
-=item eval PART_NAME
+#=item eval PART_NAME
 
 Evalue le partie du template désignée par C<PART_NAME>. Retourne la
 chaîne de caractères résultant de cette évaluation.
 
-=item getPart PART_NAME
+#=item getPart PART_NAME
 
 Retourne la partie désignée du template.
 
-=item ppregexp REGEXP
+#=item ppregexp REGEXP
 
 Pré-processe une expression régulière de manière à pouvoir l'insérer
 dans un template où le délimiteur d'expression régulière est un "/",
 ou un "!".
 
-=item setPart PART_NAME => TEXT
+#=item setPart PART_NAME => TEXT
 
 C<setPart()> permet de définir une nouvelle entrée dans le hash qui
 définit le contenu du template.
 
-=back
+#=back
 
-=head1 EXEMPLES
+#=head1 EXEMPLES
 
 
 La classe C<Parse::Template> permet de se livrer à toutes sortes de
@@ -282,25 +282,25 @@ de code à la classe C<Parse::Lex>. Vous trouverez d'autres exemples
 d'utilisation dans les classes C<Parse::Lex>, C<Parse::CLex> et
 C<Parse::Token>.
 
-=head1 APROPOS DE LA VERSION EN COURS
+#=head1 APROPOS DE LA VERSION EN COURS
 
 Il s'agit d'un module expérimental. Je suis très intéressé par vos
 remarques et suggestions.
 
-=head1 BUG
+#=head1 BUG
 
 Les instances ne sont pas détruites. Donc n'utilisez pas cette classe
 pour créer un grand nombre d'instances.
 
-=head1 AUTEUR
+#=head1 AUTEUR
 
 Philippe Verdret avec l'aide d'Ocrat pour la traduction de la
 documentation en anglais.
 
-=head1 COPYRIGHT
+#=head1 COPYRIGHT
 
 Copyright (c) 1995-1999 Philippe Verdret. All rights reserved.
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-=cut
+#=cut

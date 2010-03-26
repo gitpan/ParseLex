@@ -1,8 +1,8 @@
-=head1 NAME
+#=head1 NAME
 
 C<Parse::Lex> - Générateur d'analyseurs lexicaux
 
-=head1 SYNOPSIS
+#=head1 SYNOPSIS
 
 	require 5.005;
 
@@ -44,7 +44,7 @@ C<Parse::Lex> - Générateur d'analyseurs lexicaux
         string with an embedded "" in it"
         an invalid string with a "" in it"
 
-=head1 DESCRIPTION
+#=head1 DESCRIPTION
 
 Les classes C<Parse::Lex> et C<Parse::CLex> permettent de créer des
 analyseurs lexicaux. Elles exploitent des techniques d'analyse
@@ -95,7 +95,7 @@ isolée ou un flot de données provenant d'une entrée quelconque.
 Lorsque l'analyseur a épuisé les données il retourne une instance
 C<Parse::Token> dont le nom est C<EOI> (End Of Input).
 
-=head2 Conditions
+#=head2 Conditions
 
 Il est possible d'associer des conditions de déclenchement aux règles
 de reconnaissance des tokens qui composent votre analyseur lexical (à
@@ -166,11 +166,11 @@ Exemple (emprunté à la documentation de FLEX).
 
 La condition spéciale C<ALL> est toujours vérifiée.
 
-=head2 Méthodes
+#=head2 Méthodes
 
-=over 4
+#=over 4
 
-=item analyze EXPR
+#=item analyze EXPR
 
 Analyse C<EXPR> et retourne une liste de couples composés d'un nom de
 token suivi du texte reconnu. C<EXPR> peut être une chaîne de caractères
@@ -181,9 +181,9 @@ Exemples.
  @tokens = Parse::Lex->new(qw(PLUS [+] NUMBER \d+))->analyze("3+3+3");
  @tokens = Parse::Lex->new(qw(PLUS [+] NUMBER \d+))->analyze(\*STREAM);
 
-=item buffer EXPR
+#=item buffer EXPR
 
-=item buffer
+#=item buffer
 
 Retourne le contenu du buffer interne à l'analyseur lexical. Avec une
 expression en argument, place le résultat de l'expression dans le
@@ -193,39 +193,39 @@ Il n'est pas conseillé de changer directement le contenu du buffer
 sans changer la position du pointeur qui suit l'analyse (C<pos()>) et
 la valeur de la longueur du buffer (C<length()>).
 
-=item configure(HASH)
+#=item configure(HASH)
 
 Méthode d'instance permettant de spécifier un analyseur lexical. Cette
 méthode accepte la liste des attributs-valeurs suivants :
 
-=over 10
+#=over 10
 
-=item From => EXPR
+#=item From => EXPR
 
 Cet attribut joue le même rôle que la méthode C<from(EXPR)>.
 C<EXPR> peut être un filehandle ou une chaîne de caractères.
 
-=item Tokens => ARRAY_REF
+#=item Tokens => ARRAY_REF
 
 C<ARRAY_REF> doit contenir la liste des attributs-valeurs spécifiant
 les tokens à reconnaître (voir la documentation de C<Parse::Token>).
 
-=item Skip => REGEX
+#=item Skip => REGEX
 
 Cet attribut joue le même rôle que la méthode C<skip(REGEX)>. C<REGEX>
 décrit les motifs à sauter lors de l'analyse.
 
-=over 4
+#=over 4
 
-=item end EXPR
+#=item end EXPR
 
 Désactive la condition C<EXPR>.
 
-=item eoi
+#=item eoi
 
 Retourne VRAI lorsqu'il n'y a plus de données à analyser.
 
-=item every SUB
+#=item every SUB
 
 Évite de devoir écrire une boucle de lecture pour analyser un flot de
 données.  C<SUB> est une fonction anonyme exécutée après la
@@ -249,21 +249,21 @@ C<"1+2"> vous pouvez écrire :
 Le premier argument de la fonction anonyme est l'instance
 C<Parse::Token> reconnue.
 
-=item exclusive LISTE
+#=item exclusive LISTE
 
 Méthode de classe déclarant comme I<exclusives> les conditions
 présentes dans C<LISTE>.
 
-=item flush
+#=item flush
 
 Si la conservation des chaînes consommées est activée, C<flush()>
 retourne et vide le buffer contenant les chaînes de caractères
 reconnues jusqu'ici. Utile seulement si vous êtes dans le mode activé
 par C<hold()>.
 
-=item from EXPR
+#=item from EXPR
 
-=item from
+#=item from
 
 C<from(EXPR)> permet d'indiquer les données à analyser ou la source
 des données à analyser.  L'argument de cette méthode est donc, soit
@@ -282,7 +282,7 @@ Exemples.
 	$lexer->from(\*DATA);
 	$lexer->from('les données à analyser');
 
-=item getSub
+#=item getSub
 
 C<getSub()> retourne la fonction anonyme qui effectue l'analyse
 lexicale.
@@ -305,13 +305,13 @@ Exemple.
 	  print $token->text, "\n";
 	}
 
-=item getToken
+#=item getToken
 
 Synonyme de la méthode C<token()>.
 
-=item hold EXPR
+#=item hold EXPR
 
-=item hold
+#=item hold
 
 Active/désactive la conservation des chaînes analysées (et consommées
 dans le cas de C<Parse::CLex>).  Retourne la valeur courante. Peut
@@ -320,35 +320,35 @@ dans le cas de C<Parse::CLex>).  Retourne la valeur courante. Peut
 On peut obtenir le contenu du buffer au moyen de la méthode C<flush()>
 qui a également pour effet de vider le buffer. 
 
-=item inclusive LISTE
+#=item inclusive LISTE
 
 Méthode de classe déclarant comme I<inclusives> les conditions
 présentes dans C<LISTE>.
 
-=item length EXPR
+#=item length EXPR
 
-=item length
+#=item length
 
 Retourne la longueur de l'enregistrement courant.  C<length
 EXPR> fixe la longueur de cet enregistrement.
 
-=item line EXPR
+#=item line EXPR
 
-=item line
+#=item line
 
 Retourne le numéro de l'enregistrement courant.  C<line EXPR>
 permet de fixer ce numéro.  Retourne toujours 1 si on analyse une
 chaîne de caractères. La méthode C<readline()> incrémente le numéro de
 ligne.
 
-=item name EXPR
+#=item name EXPR
 
-=item name
+#=item name
 
 Permet de donner un nom à un analyseur lexical. C<name()> permet de
 connaître ce nom.
 
-=item next
+#=item next
 
 Provoque la recherche du prochain token. Retourne l'instance C<Parse::Token>
 reconnue.  Retourne l'instance C<Token::EOI> en fin de données.
@@ -359,7 +359,7 @@ Exemples.
 	print $lexer->next->name;   # print the token type
 	print $lexer->next->text;   # print the token content
 
-=item nextis SCALAR_REF
+#=item nextis SCALAR_REF
 
 Variable de la méthode C<next()>. Les tokens sont placés dans
 C<SCALAR_REF>. La méthode retourne 1 tant que le token n'est C<EOI>.
@@ -370,7 +370,7 @@ Exemple.
 	   print $token->text();
 	}
 
-=item new LISTE
+#=item new LISTE
 
 Crée et retourne un nouvel analyseur lexical. L'argument de la méthode
 est une liste d'instances de la classe C<Parse::Token> ou de triplets
@@ -380,21 +380,21 @@ reconnaissance et éventuellement d'une fonction anonyme exécutée lors
 de la reconnaissance du token. Pour chaque triplet, une instance de
 type C<Parse::Token> est créée dans le package appelant.
 
-=item offset
+#=item offset
 
 Retourne le nombre de caractères déjà consommé depuis le début du flot
 de données analysé.
 
-=item pos EXPR
+#=item pos EXPR
 
-=item pos
+#=item pos
 
 C<pos EXPR> fixe la position de début du prochain token à reconnaître
 dans l'enregistrement courant (ne fonctionne pas avec les analyseurs
 de la classe C<Parse::CLex>). C<pos()> retourne le nombre de caractères
 déjà consommés dans l'enregistrement courant.
 
-=item readline
+#=item readline
 
 Effectue la lecture des données sur l'entrée spécifiée par la
 méthode C<from()>. Retourne le résultat de la lecture.
@@ -408,24 +408,24 @@ Exemple.
 	  print $lexer->readline() # read and print one line
 	}
 
-=item reset
+#=item reset
 
 Vide le buffer interne à l'analyseur lexical et efface tout token déjà
 reconnu.
 
-=item restart
+#=item restart
 
 Réinitialise l'automate d'analyse. La seule condition active devient
 la condition C<INITIAL>.
 
-=item setToken TOKEN
+#=item setToken TOKEN
 
 Force le token à C<TOKEN>. Utile pour requalifier un token à
 l'intérieur de la fonction anonyme associée à ce token.
 
-=item skip EXPR
+#=item skip EXPR
 
-=item skip
+#=item skip
 
 C<EXPR> est une expression régulière définissant un motif inter-token
 (par défaut C<[ \t]+>). C<skip('')> permet de supprimer ce
@@ -447,31 +447,31 @@ Exemple.
   4
 
 
-=item start EXPR
+#=item start EXPR
 
 Active la condition EXPR.
 
-=item state EXPR
+#=item state EXPR
 
 C<state EXPR> permet de connaître l'état de la condition représentée
 par EXPR.
 
-=item token
+#=item token
 
 Retourne l'instance correspondant au dernier token reconnu. En l'absence
 de token lu, retourne un token spécial dont le nom est C<DEFAULT>.
 
-=item tokenClass EXPR
+#=item tokenClass EXPR
 
-=item tokenClass 
+#=item tokenClass 
 
 Indique quelle est la classe des tokens à créer à partir de la liste
 passée en argument à la méthode C<new()>. Sans argument retourne le
 nom de cette classe.  Par défaut la classe est C<Parse::Token>.
 
-=item trace OUTPUT
+#=item trace OUTPUT
 
-=item trace 
+#=item trace 
 
 Méthode de classe qui active le mode trace.  L'activation du mode
 trace doit avoir lieu avant la création de l'analyseur lexical. Le
@@ -480,9 +480,9 @@ mode peut être ensuite désactivé par un nouvel appel de la méthode.
 C<OUTPUT> peut être un nom de fichier ou une référence à un
 filehandle vers laquelle la trace va être redirigée.
 
-=back
+#=back
 
-=head1 GESTION DES ERREURS
+#=head1 GESTION DES ERREURS
 
 Pour traiter les cas de non reconnaissance de token vous pouvez
 définir un token spécifique en fin de la liste des tokens composant
@@ -494,7 +494,7 @@ alors possible d'appeler une fonction de traitement des erreurs :
        die qq!can\'t analyze: "$_[1]"!;
      }
 
-=head1 EXEMPLES
+#=head1 EXEMPLES
 
 ctokenizer.pl - Segmentation d'un flot de données au moyen
 de la classe C<Parse::CLex>.
@@ -509,27 +509,27 @@ sexp.pl - Interprète d'expressions arithmétiques préfixées.
 sexpcond.pl - Interprète d'expressions arithmétiques préfixées avec
 utilisation des conditions.
 
-=head1 BUGS
+#=head1 BUGS
 
 Les analyseurs de la classe C<Parse::CLex> ne permettent pas
 d'utiliser des expressions régulières avec ancrage.
 
-=head1 VOIR EGALEMENT
+#=head1 VOIR EGALEMENT
 
 C<Parse::Token>, C<Parse::LexEvent>, C<Parse::YYLex>.
 
-=head1 AUTEUR
+#=head1 AUTEUR
 
 Philippe Verdret 
 
-=head1 REMERCIEMENTS
+#=head1 REMERCIEMENTS
 
 La version 2.0 doit beaucoup aux suggestions de Vladimir Alexiev.
 Ocrat a largement contribué à l'amélioration de cette documentation.
 Merci également aux nombreuses personnes qui m'ont envoyé des rapports
 de bugs et parfois des corrections.
 
-=head1 REFERENCES
+#=head1 REFERENCES
 
 Friedl, J.E.F. Mastering Regular Expressions. O'Reilly & Associates
 1996.
@@ -538,7 +538,7 @@ Mason, T. & Brown, D. - Lex & Yacc. O'Reilly & Associates, Inc. 1990.
 
 FLEX - A Scanner generator (voir par exemple ftp://ftp.ee.lbl.gov/)
 
-=head1 COPYRIGHT
+#=head1 COPYRIGHT
 
 Copyright (c) 1995-1999 Philippe Verdret. All rights reserved.
 This module is free software; you can redistribute it and/or

@@ -18,7 +18,6 @@ lib/Parse/ALex.pm
 lib/Parse/CLex.pm
 lib/Parse/Lex.pm
 lib/Parse/LexEvent.pm
-lib/Parse/Template.pm
 lib/Parse/Token-t.pm
 lib/Parse/Token.pm
 lib/Parse/Trace.pm

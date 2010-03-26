@@ -1,22 +1,8 @@
 #!/usr/local/bin/perl
 
-BEGIN {  push(@INC, './t') }
+BEGIN { push(@INC, './t') }
 use W;
-
-require 5.004; 
-
-$test = W->new('1..1');
-$test->result("examples/tokenizer.pl");
-$test->expected(\*DATA);
-print $test->report(1, sub { 
-		      my $expectation =  $test->expected;
-		      my $result =  $test->result;
-		      $expectation =~ s/\s+$//;
-		      #print STDERR "Result:\n$result\n";
-		      #print STDERR "Expectation:\n$expectation\n";
-		      $result =~ s/\s+$//;
-		      $expectation eq $result;
-		    });
+print W->new()->test('test1', "examples/tokenizer.pl", *DATA);
 
 __END__
 Tokenization of DATA:
@@ -39,7 +25,7 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 2.18
+Version 2.19
 Trace is ON in class Parse::Lex
 [main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]*): 1
 [main::lexer|Parse::Lex] Token read (ADDOP, [-+]): +

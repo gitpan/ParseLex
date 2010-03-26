@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               ParseLex
-version:            2.18
+version:            2.19
 abstract:           ~
 author:  []
 license:            unknown
@@ -10,7 +10,7 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    Test::More:  0
+    Parse::Template:  3.01
 no_index:
     directory:
         - t

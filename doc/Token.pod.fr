@@ -1,8 +1,8 @@
-=head1 NAME
+#=head1 NAME
 
 C<Parse::Token> - Définition des tokens utilisés par C<Parse::Lex>
 
-=head1 SYNOPSIS
+#=head1 SYNOPSIS
 
 	require 5.005;
 
@@ -29,7 +29,7 @@ C<Parse::Token> - Définition des tokens utilisés par C<Parse::Lex>
 	__END__
 	1+2
 
-=head1 DESCRIPTION
+#=head1 DESCRIPTION
 
 La classe C<Parse::Token> et ses dérivées permettent de définir les
 tokens utilisés par C<Parse::Lex> ou C<Parse::LexEvent>.
@@ -46,17 +46,17 @@ C<byacc> voir le package C<Parse::YYLex>.
 L'inclusion de C<Parse::Token> se fait indirectement par un C<use
 Parse::Lex> ou C<use Parse::LexEvent>.
 
-=head1 Méthodes
+#=head1 Méthodes
 
-=over 4
+#=over 4
 
-=item action
+#=item action
 
 Retourne la fonction anonyme définie dans l'objet C<Parse::Token>.	
 
-=item factory LIST
+#=item factory LIST
 
-=item factory ARRAY_REF
+#=item factory ARRAY_REF
 
 La méthode C<factory(LIST)> crée et retourne une liste de tokens à
 partir d'une liste de spécifications incluant par token : un nom, une
@@ -119,40 +119,40 @@ Dans cet exemple nous avons utilisé C<$_[1]> qui correspond au texte
 reconnu par l'expression régulière.  Ce texte associé au token doit
 être retourné par la fonction anonyme.
 
-=item get EXPR
+#=item get EXPR
 
 Permet d'obtenir la valeur de l'attribut résultant de l'évaluation
 d'EXPR.  Il est également possible d'utiliser le nom de l'attribut
 comme nom de méthode.
 
-=item getText
+#=item getText
 
 Retourne la chaîne de caractères reconnue au moyen de l'objet
 C<Parse::Token>.
 
 Synonyme de la méthode C<text()>.
 
-=item isnext EXPR
+#=item isnext EXPR
 
-=item isnext
+#=item isnext
 
 Retourne le statut du token. La chaîne consommée est disponible dans
 EXPR s'il s'agit d'une référence à un scalaire.
 
-=item name
+#=item name
 
 Retourne le nom du token.
 
-=item next
+#=item next
 
 Active la recherche du token défini par l'expression régulière
 contenue dans l'objet. Si ce token est reconnu sur le flot de
 caractère à analyser alors C<next()> retourne la chaîne trouvée et met le
 statut de l'objet à vrai.
 
-=item new SYMBOL_NAME, REGEXP, SUB
+#=item new SYMBOL_NAME, REGEXP, SUB
 
-=item new SYMBOL_NAME, REGEXP
+#=item new SYMBOL_NAME, REGEXP
 
 Crée un objet de type C<Parse::Token::Simple> ou
 C<Parse::Token::Segmented>. Les arguments de la méthode C<new()> sont
@@ -207,42 +207,42 @@ Dans la fonction anonyme vous pouvez utiliser les variables
 positionnelles C<$1>, C<$2>, ... qui correspondent aux parenthèses
 placées dans l'expression régulière.
 
-=item regexp
+#=item regexp
 
 Retourne l'expression régulière définie dans l'objet C<Parse::Token>.
 
-=item set LISTE
+#=item set LISTE
 
 Permet de décorer un token au moyen d'une liste d'attribut-valeurs.
 
 Un nom d'attribut peut être utilisé comme nom de méthode.
 
-=item setText EXPR
+#=item setText EXPR
 
 La valeur de EXPR définit la chaîne de caractères associée au 
 token.
 
 Synonyme de la méthode C<text(EXPR)>.
 
-=item status EXPR
+#=item status EXPR
 
-=item status
+#=item status
 
 Indique si la dernière recherche du token a réussie ou échouée.
 C<status EXPR> permet de forcer le statut à la valeur dénotée
 par EXPR.
 
-=item text EXPR
+#=item text EXPR
 
-=item text
+#=item text
 
 C<text()> Retourne la chaîne de caractères reconnue au moyen du
 token. La valeur de EXPR permet de définir la chaîne de caractères
 associée au token.
 
-=item trace OUTPUT 
+#=item trace OUTPUT 
 
-=item trace 
+#=item trace 
 
 Méthode de classe qui active/désactive une trace de l'analyse
 lexicale. 
@@ -250,9 +250,9 @@ lexicale.
 C<OUTPUT> peut être un nom de fichier ou une référence à un
 filehandle vers laquelle la trace va être dirigée.
 
-=back
+#=back
 
-=head1 Sous-classes de Parse::Token
+#=head1 Sous-classes de Parse::Token
 
 Des sous-classes de la classe C<Parse::Token> sont en cours de
 définition. Elles permettent de reconnaître des structures
@@ -282,52 +282,52 @@ imbriquées, telles que les expressions parenthésées. NON DéFINIE.
 La création de ces classes est récente et comporte sans aucun doute
 des bugs. 
 
-=head2 Parse::Token::Action 
+#=head2 Parse::Token::Action 
 
 Les tokens de la classe C<Parse::Token::Action> permettent d'insérer
 des expressions Perl quelconque au sein d'un analyseur lexical.  Une
 expression peut être utilisée par exemple pour imprimer des variables
 internes à l'analyseur :
 
-=over 
+#=over 
 
-=item *
+#=item *
 
 C<$LEX_BUFFER> : contenu du buffer à analyser
 
-=item *
+#=item *
 
 C<$LEX_LENGTH> : longueur de la chaîne de caractères en cours d'analyse
 
-=item *
+#=item *
 
 C<$LEX_RECORD> : numéro de l'enregistrement en cours d'analyse
 
-=item *
+#=item *
 
 C<$LEX_OFFSET> : nombre de caractère déjà consommés depuis le début de
 l'analyse
 
-=item *
+#=item *
 
 C<$LEX_POS> : position atteinte par l'analyse en nombre de caractères
 depuis le début du buffer.
 
-=back
+#=back
 
 Le constructeur de la classe accepte les attributs suivants : 
 
-=over 
+#=over 
 
-=item *
+#=item *
 
 C<Name> : le nom du token
 
-=item * 
+#=item * 
 
 C<Expr> : une expression Perl 
 
-=back
+#=back
 
 Exemple :
 
@@ -341,47 +341,47 @@ Exemple :
 				      ;!,
 				     );
 
-=head2 Parse::Token::Simple
+#=head2 Parse::Token::Simple
 
 Le constructeur de la classe accepte les attributs suivants : 
 
-=over
+#=over
 
-=item * 
+#=item * 
 
 C<Handler> : la valeur indique un nom fonction à appeler lors d'une
 analyse conduite par un analyseur de la classe C<Parse::LexEvent>.
 
-=item * 
+#=item * 
 
 C<Name> : la valeur associée est le nom du token.
 
-=item * 
+#=item * 
 
 C<Regex> : La valeur associée est une expression régulière
 correspondant au motif à reconnaître.
 
-=item * 
+#=item * 
 
 C<ReadMore> : si la valeur associée est 1, la reconnaissance du token
 se poursuit après la lecture d'un nouvel enregistrement.  Les chaînes
 reconnues sont concaténées. Cet attribut n'a d'effet que lors de
 l'analyse d'un flot de caractères.
 
-=item * 
+#=item * 
 
 C<Sub> : la valeur associée doit être une fonction anonyme à exécuter
 à l'issue de la reconnaissance du token. Cette fonction n'est utilisée
 qu'avec les analyseurs de la classe C<Parse::Lex> ou C<Parse::CLex>.
 
-=back
+#=back
 
 Exemple.
       new Parse::Token::Simple(Name => 'remainder', 
 			       Regex => '[^/\'\"]+', 
 			       ReadMore => 1);
 
-=head2 Parse::Token::Segmented
+#=head2 Parse::Token::Segmented
 
 La définition de ces tokens comporte trois expressions
 régulières. Lors de l'analyse d'un flot de données, de nouvelles
@@ -389,31 +389,31 @@ données sont lues tant que la fin du token n'est pas atteinte.
 
 Le constructeur de la classe accepte les attributs suivants : 
 
-=over
+#=over
 
-=item * 
+#=item * 
 
 C<Handler> : la valeur indique un nom fonction à appeler lors d'une
 analyse conduite par un analyseur de la classe C<Parse::LexEvent>.
 
-=item * 
+#=item * 
 
 C<Name> : la valeur associée est le nom du token.
 
-=item * 
+#=item * 
 
 C<Regex> : La valeur associée doit être une référence à un tableau qui 
 contient trois expressions régulières.
 
-=item * 
+#=item * 
 
 C<Sub> : la valeur associée doit être une fonction anonyme à exécuter
 à l'issue de la reconnaissance du token. Cette fonction n'est utilisée
 avec les analyseurs de la classe C<Parse::Lex> ou C<Parse::CLex>.
 
-=back
+#=back
 
-=head2 Parse::Token::Quoted
+#=head2 Parse::Token::Quoted
 
 C<Parse::Token::Quoted> est une sous-classe de
 C<Parse::Token::Segmented>. Elle permet de reconnaître des chaînes de
@@ -431,40 +431,40 @@ Exemples.
 
 Le constructeur de la classe accepte les attributs suivants : 
 
-=over
+#=over
 
-=item * 
+#=item * 
 
 C<End> : La valeur associée est une expression régulière permettant
 de reconnaître la fin du token.
 
-=item * 
+#=item * 
 
 C<Escape> : La valeur associée indique le caractère utilisé pour
 littéralisater le délimiteur. Par défaut on considère qu'un doublement
 du caractère de fin littéralise ce caractère.
 
-=item * 
+#=item * 
 
 C<Handler> : la valeur indique un nom fonction à appeler lors d'une
 analyse conduite par un analyseur de la classe C<Parse::LexEvent>.
 
-=item * 
+#=item * 
 
 C<Name> : la valeur associée est le nom du token.
 
-=item * 
+#=item * 
 
 C<Start> : La valeur associée est une expression régulière permettant
 de reconnaître le début du token.
 
-=item * 
+#=item * 
 
 C<Sub> : la valeur associée doit être une fonction anonyme à exécuter
 à l'issue de la reconnaissance du token. Cette fonction n'est utilisée
 avec les analyseurs de la classe C<Parse::Lex> ou C<Parse::CLex>.
 
-=back
+#=back
 
 Exemple.
       new Parse::Token::Quoted(Name => 'squotes', 
@@ -473,7 +473,7 @@ Exemple.
 			       Quote => qq!\'!, 
 			      );
 
-=head2 Parse::Token::Delimited
+#=head2 Parse::Token::Delimited
 
 C<Parse::Token::Delimited> est une sous-classe de
 C<Parse::Token::Segmented>. Elle permet, par exemple, de reconnaître
@@ -494,34 +494,34 @@ Exemples.
 
 Le constructeur de la classe accepte les attributs suivants : 
 
-=over 4
+#=over 4
 
-=item * 
+#=item * 
 
 C<End> : La valeur associée est une expression régulière permettant
 de reconnaître la fin du token.
 
-=item * 
+#=item * 
 
 C<Handler> : la valeur indique un nom fonction à appeler lors d'une
 analyse conduite par un analyseur de la classe C<Parse::LexEvent>.
 
-=item * 
+#=item * 
 
 C<Name> : la valeur associée est le nom du token.
 
-=item * 
+#=item * 
 
 C<Start> : La valeur associée est une expression régulière permettant
 de reconnaître le début du token.
 
-=item * 
+#=item * 
 
 C<Sub> : la valeur associée doit être une fonction anonyme à exécuter
 à l'issue de la reconnaissance du token. Cette fonction n'est utilisée
 avec les analyseurs de la classe C<Parse::Lex> ou C<Parse::CLex>.
 
-=back
+#=back
 
 Exemple.
       new Parse::Token::Delimited(Name => 'comment',
@@ -529,7 +529,7 @@ Exemple.
 				  End => '[*]/'
 				 );
 
-=head2 Parse::Token::Nested - Non définie
+#=head2 Parse::Token::Nested - Non définie
 
 Exemples.
 
@@ -542,35 +542,35 @@ Exemples.
       ----------------------------------------------------------
 
 
-=head1 BUGS
+#=head1 BUGS
 
 L'implémentation des sous-classes de tokens n'est pas complète pour
 les analyseurs de la classe C<Parse::CLex>. Je n'ai d'ailleurs pas
 trop envi de le faire, sachant qu'une implémentation pour les classes
 C<Parse::Lex> et C<Parse::LexEvent> ne paraît tout à fait suffisante.
 
-=head1 AUTEUR
+#=head1 AUTEUR
 
 Philippe Verdret
 
-=head1 REMERCIEMENTS
+#=head1 REMERCIEMENTS
 
 La version 2.0 doit beaucoup aux suggestions de Vladimir Alexiev.
 Ocrat a largement contribué à l'amélioration de cette documentation.
 Merci également aux nombreuses personnes qui m'ont fait des remarques
 et parfois envoyés des corrections de bugs.
 
-=head1 REFERENCES
+#=head1 REFERENCES
 
 Friedl, J.E.F. Mastering Regular Expressions. O'Reilly & Associates
 1996.
 
 Mason, T. & Brown, D. - Lex & Yacc. O'Reilly & Associates, Inc. 1990.
 
-=head1 COPYRIGHT
+#=head1 COPYRIGHT
 
 Copyright (c) 1995-1999 Philippe Verdret. All rights reserved.
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-=cut
+#=cut

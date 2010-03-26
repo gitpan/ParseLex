@@ -1,8 +1,8 @@
-=head1 NAME
+#=head1 NAME
 
 C<Parse::LexEvent> - Générateur d'analyseurs lexicaux événementiels (1.00 alpha)
 
-=head1 SYNOPSIS
+#=head1 SYNOPSIS
 
   use Parse::LexEvent;
   
@@ -42,7 +42,7 @@ C<Parse::LexEvent> - Générateur d'analyseurs lexicaux événementiels (1.00 alpha)
   var y = 100;
 
 
-=head1 DESCRIPTION
+#=head1 DESCRIPTION
 
 C<Parse::LexEvent> génère des analyseurs lexicaux à la manière de
 C<Parse::Lex>, mais les analyseurs générés émettent un événement à
@@ -60,32 +60,32 @@ méthodes décrites dans la documentation de la classe C<Parse::Lex> à
 l'exception des méthodes C<analyze()>, C<every()> C<next()>, et
 C<nextis()>.
 
-=head2 Methodes
+#=head2 Methodes
 
-=over 4
+#=over 4
 
-=item parse()
+#=item parse()
 
 Cette méthode lance l'analyse des données spécifiées par C<from()>.
 
-=back
+#=back
 
-=head1 EXAMPLES
+#=head1 EXAMPLES
 
 cparser.pl - Cet analyseur reconnaît trois types de structure : des
 commentaires C ou C++, des chaînes entre guillemets et le reste. Il
 emet un événement spécifique à chacune.  On peut l'utiliser, par
 exemple, pour analyser des programmes C, C++ ou Javascript.
 
-=head1 SEE ALSO
+#=head1 SEE ALSO
 
 C<Parse::Lex>, C<Parse::Token>.
 
-=head1 AUTHOR
+#=head1 AUTHOR
 
 Philippe Verdret.
 
-=head1 COPYRIGHT
+#=head1 COPYRIGHT
 
 Copyright (c) 1999 Philippe Verdret. All rights reserved.  This module
 is free software; you can redistribute it and/or modify it under the

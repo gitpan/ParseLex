@@ -8,5 +8,6 @@ WriteMakefile(
 		  'PREREQ_PM' 		=> { 'Test::More' => 0 },
 	      'clean'			=> {'FILES' => ['err', 'testlog']},
 	      'dist'            => { COMPRESS => 'gzip', SUFFIX => 'gz' },
+		  'PREREQ_PM'		=> { 'Parse::Template'		=> 3.01 },
 );
 

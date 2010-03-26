@@ -1,3 +1,9 @@
+VERSION 2.19 - 2010-03-26
+
+o Remove Parse::Template from the module, use the newer Parse::Template 3.01 instead.
+  This solves the problem of ParseLex not passing the tests in Perl 5.11
+  (RT#55977)
+
 VERSION 2.18 - 2010-02-26
 
 o CPAN shows module description from the French pod files, instead of 

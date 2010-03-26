@@ -2,23 +2,7 @@
 
 BEGIN { push(@INC, './t') }
 use W;
-
-if ($] < 5.005) {
-  print STDERR "Perl 5.005 required--this is only version $]\n";
-  print "1..1\n";
-  print "ok 1\n";
-} else {
-  $test = W->new('1..1');
-  $test->result("examples/evparser.pl");
-  $test->expected(\*DATA);
-  print $test->report(1, sub { 
-			my $expectation =  $test->expected;
-			my $result =  $test->result;
-			$expectation =~ s/\s+$//;
-			$result =~ s/\s+$//;
-			$expectation eq $result;
-		      });
-}
+print W->new()->test('test5', "examples/evparser.pl", *DATA);
 
 __END__
 comment: /*
@@ -37,4 +21,4 @@ remainder: ;
 var x = 1;
 var y = 2;
 
-Version 2.18
+Version 2.19

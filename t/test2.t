@@ -1,19 +1,8 @@
 #!/usr/local/bin/perl
 
-BEGIN {  push(@INC, './t') }
+BEGIN { push(@INC, './t') }
 use W;
-
-require 5.004; 
-
-$test = W->new('1..1');
-$test->result("examples/every.pl");
-$test->expected(\*DATA);
-$test->assert('\n\n$');
-print $test->report(1, sub { 
-		      my $result = $test->result;
-#		      print $result;
-		      $test->expected eq $result;
-		    });
+print W->new()->test('test2', "examples/every.pl", *DATA);
 
 __END__
 INTEGER	1
@@ -85,4 +74,3 @@ INTEGER	7
 ADDOP	-
 INTEGER	76
 NEWLINE	
-

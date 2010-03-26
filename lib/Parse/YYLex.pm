@@ -133,7 +133,7 @@ use Parse::Lex;
 use vars qw(@ISA $VERSION);
 
 @ISA = qw(Parse::Lex);
-$Parse::YYLex::VERSION = '2.18';
+$Parse::YYLex::VERSION = '2.19';
 
 my ($TABLE,$yylval);
 my $ytab = 'y.tab.ph';
