@@ -1,8 +1,19 @@
+VERSION 2.20 - 2010-08-13
+
+o Force use of Parse::Template 3.04 to fix RT #58128 - (?!...) was 
+  being replaced by (?\\!...) in Parse::Template 3.03
+o accepts pre-compiled regexps Parse::Lex->new(VALUE => qr/.../)
+o test1.t and test5.t had hard-coded version in compare string, needed 
+  to be changed on every new version to match the version number in the output
+o Fix PREREQ_PM in Makefile.PL
+o Parse::Lex POD : missing =back after configure(HASH)
+
 VERSION 2.19 - 2010-03-26
 
+o Solve RT #55977 (parse::template should not be part of parselex)
+o Solve RT #53574 (Bleadperl d1d15184 breaks ParseLex-2.17)
 o Remove Parse::Template from the module, use the newer Parse::Template 3.01 instead.
   This solves the problem of ParseLex not passing the tests in Perl 5.11
-  (RT#55977)
 
 VERSION 2.18 - 2010-02-26
 

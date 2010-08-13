@@ -7,6 +7,7 @@
 
 require 5.004;
 use strict;
+use Parse::ALex;	# get $Parse::ALex::VERSION
 package W;			# Test::Wrapper
 use vars qw($VERBOSE $LOG);
 $W::VERSION = '1.3';
@@ -182,6 +183,8 @@ sub comparator {
 	# ignore whitespace differences
 	(my $expected_cmp = $expected) =~ s/\s+/ /g; $expected_cmp =~ s/\s+$//;
 	(my $result_cmp   = $result)   =~ s/\s+/ /g; $result_cmp   =~ s/\s+$//;
+	# ignore VERSION differences
+	$expected_cmp =~ s/Version X.XX/Version $Parse::ALex::VERSION/g;
 	
     if ($VERBOSE || $expected_cmp ne $result_cmp) {
 		print STDERR "\n";

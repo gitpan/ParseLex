@@ -4,7 +4,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::Token;		# or perhaps: Parse::AToken
-$Parse::Token::VERSION = '2.19';
+$Parse::Token::VERSION = '2.20';
 use Parse::Trace;
 @Parse::Token::ISA = qw(Parse::Trace);
 

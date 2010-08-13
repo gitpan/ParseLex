@@ -5,7 +5,7 @@ use strict qw(subs);
 
 package Parse::Lex;
 use Parse::ALex;
-$Parse::Lex::VERSION = '2.19';
+$Parse::Lex::VERSION = '2.20';
 @Parse::Lex::ISA = qw(Parse::Tokenizer);
 
 my $lexer = __PACKAGE__->clone;
@@ -317,7 +317,7 @@ the tokens to be recognized (see the documentation for C<Parse::Token>).
 This attribute plays the same role as the C<skip(REGEX)> method. C<REGEX>
 describes the patterns to skip over during the analysis.
 
-=over 4
+=back
 
 =item end EXPR
 

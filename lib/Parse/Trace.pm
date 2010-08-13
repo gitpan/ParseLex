@@ -3,7 +3,7 @@ require 5.000;
 use strict;
 
 package Parse::Trace;
-$Parse::Trace::VERSION = '2.19';
+$Parse::Trace::VERSION = '2.20';
 use Carp;
 #use vars qw($indent);
 $Trace::indent = 0;

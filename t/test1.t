@@ -25,7 +25,7 @@ string with an embedded "" in it"<-
 Record number: 3
 Type: NEWLINE	Content:->
 <-
-Version 2.19
+Version X.XX
 Trace is ON in class Parse::Lex
 [main::lexer|Parse::Lex] Token read (INTEGER, [1-9][0-9]*): 1
 [main::lexer|Parse::Lex] Token read (ADDOP, [-+]): +

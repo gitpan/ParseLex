@@ -5,7 +5,7 @@ use strict qw(subs);
 
 package Parse::CLex;
 use Parse::ALex;
-$Parse::CLex::VERSION = '2.19';
+$Parse::CLex::VERSION = '2.20';
 @Parse::CLex::ISA = qw(Parse::Tokenizer);
 
 my $lexer = __PACKAGE__->clone;

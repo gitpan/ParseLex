@@ -26,6 +26,8 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 README
+t/debug.t
+t/rt_58128.t
 t/test1.t
 t/test2.t
 t/test3.t
