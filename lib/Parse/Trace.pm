@@ -3,7 +3,7 @@ require 5.000;
 use strict;
 
 package Parse::Trace;
-$Parse::Trace::VERSION = '2.20';
+$Parse::Trace::VERSION = '2.21';
 use Carp;
 #use vars qw($indent);
 $Trace::indent = 0;
@@ -29,7 +29,7 @@ sub findName {			# Try to find the "name" of self
     if (defined($value = ${$symbol})) {
       return $symbol if ($value eq $self);
     } 
-  } keys %{"${$pkg}::"};
+  } grep {! /\W/} keys %{"${$pkg}::"};
   use strict qw(refs);
   return undef;
 }

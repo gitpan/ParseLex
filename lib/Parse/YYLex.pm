@@ -2,7 +2,7 @@ package Parse::YYLex;
 
 =head1 NAME
 
-Parse::YYLex - Version of Parse::Lex to be used by a byacc parser.
+C<Parse::YYLex> - Version of Parse::Lex to be used by a byacc parser.
 
 =head1 SYNOPSIS
 
@@ -133,7 +133,7 @@ use Parse::Lex;
 use vars qw(@ISA $VERSION);
 
 @ISA = qw(Parse::Lex);
-$Parse::YYLex::VERSION = '2.20';
+$Parse::YYLex::VERSION = '2.21';
 
 my ($TABLE,$yylval);
 my $ytab = 'y.tab.ph';

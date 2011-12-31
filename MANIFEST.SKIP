@@ -2,6 +2,7 @@
 \.kpf$
 ^TODO\.txt
 \.tmp$
+^MYMETA\.
 
 #!start included C:\Perl\lib\ExtUtils\MANIFEST.SKIP
 # Avoid version control files.

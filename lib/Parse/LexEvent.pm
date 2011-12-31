@@ -6,7 +6,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::LexEvent;
-$Parse::LexEvent::VERSION = '2.20';
+$Parse::LexEvent::VERSION = '2.21';
 
 use Parse::ALex;
 @Parse::LexEvent::ISA = qw(Parse::ALex);

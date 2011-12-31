@@ -1,3 +1,10 @@
+2.21	2011-12-31
+
+	Bug Fixes
+	* Bleadperl v5.15.6 breaks make test: 
+	  "Invalid version format (non-numeric data) at blib/lib/Parse/Trace.pm line 29"
+	  Added filter in findName to skip symbols containing any /\W/ character.
+
 VERSION 2.20 - 2010-08-13
 
 o Force use of Parse::Template 3.04 to fix RT #58128 - (?!...) was 

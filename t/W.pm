@@ -10,7 +10,7 @@ use strict;
 use Parse::ALex;	# get $Parse::ALex::VERSION
 package W;			# Test::Wrapper
 use vars qw($VERBOSE $LOG);
-$W::VERSION = '1.3';
+$W::VERSION = '2.21';
 $W::VERBOSE = $ENV{TEST_VERBOSE} || 0;
 $W::LOG = $ENV{TEST_LOG} ? 'testlog' : 0;
 

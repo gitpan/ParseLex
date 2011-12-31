@@ -16,7 +16,7 @@ use strict qw(refs);
 use strict qw(subs);
 
 package Parse::ALex;
-$Parse::ALex::VERSION = '2.20';
+$Parse::ALex::VERSION = '2.21';
 use Parse::Trace;
 @Parse::ALex::ISA = qw(Parse::Trace); 
 

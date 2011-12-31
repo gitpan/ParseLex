@@ -38,4 +38,5 @@ t/test7.t
 t/test8.t
 t/W.pm
 VERSION
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
